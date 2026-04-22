@@ -61,6 +61,7 @@ kotlin {
             dependencies {
                 implementation(libs.kotlin.stdlib)
                 // Add KMP dependencies here
+                api(libs.kotlinx.coroutines.core)
             }
         }
 

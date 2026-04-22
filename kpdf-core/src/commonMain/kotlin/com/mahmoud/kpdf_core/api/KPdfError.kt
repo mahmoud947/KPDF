@@ -7,9 +7,26 @@ package com.mahmoud.kpdf_core.api
 sealed interface KPdfError {
     val message: String
 
+
+    data class NetworkError(
+        val statusCode: Int? = null,
+        val reason: String? = null,
+    ) : KPdfError {
+        override val message: String = when {
+            statusCode != null && reason != null -> "Network error ($statusCode): $reason"
+            statusCode != null -> "Network error ($statusCode)."
+            reason != null -> "Network error: $reason"
+            else -> "Network error while loading the PDF."
+        }
+    }
+
+    data class Unknown(
+        override val message: String,
+    ) : KPdfError
+
 }
 
-class PdfException(
+class KPdfException(
     val error: KPdfError,
     cause: Throwable? = null,
 ) : Exception(error.message, cause)
