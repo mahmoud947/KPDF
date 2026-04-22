@@ -5,7 +5,7 @@ package com.mahmoud.kpdf_core.image
  * Copyright (c) 2026 KDF. All rights reserved.
  */
 
-expect class PlatformImage {
+expect class KPlatformImage {
     constructor(width: Int, height: Int)
 
     val width: Int

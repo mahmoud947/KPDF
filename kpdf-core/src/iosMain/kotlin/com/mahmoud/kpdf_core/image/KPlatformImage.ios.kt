@@ -4,7 +4,7 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.useContents
 import platform.UIKit.UIImage
 
- actual class PlatformImage actual constructor(
+ actual class KPlatformImage actual constructor(
      actual val width: Int,
      actual val height: Int,
 ) {

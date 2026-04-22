@@ -6,7 +6,7 @@ package com.mahmoud.kpdf_core.api
  */
 
 
-interface PdfDocumentRef {
+interface KPdfDocumentRef {
     val id: String
     val pageCount: Int
     val title: String?
@@ -20,7 +20,7 @@ interface PdfDocumentRef {
         targetWidth: Int,
         targetHeight: Int,
         zoom: Float = 1f,
-    ): Result<PdfPageBitmap>
+    ): Result<KPdfPageBitmap>
 
 
 }

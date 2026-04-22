@@ -7,9 +7,9 @@ import com.mahmoud.kpdf_core.image.PlatformImage
  * Copyright (c) 2026 KDF. All rights reserved.
  */
 
- data class PdfPageBitmap(
+ data class KPdfPageBitmap(
      val image: PlatformImage,
      override val width: Int,
      override val height: Int,
      val pageIndex: Int,
- ) : PdfPageImage
+ ) : KPdfPageImage

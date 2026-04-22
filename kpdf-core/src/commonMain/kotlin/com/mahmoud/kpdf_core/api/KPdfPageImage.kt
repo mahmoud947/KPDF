@@ -5,7 +5,7 @@ package com.mahmoud.kpdf_core.api
  * Copyright (c) 2026 KDF. All rights reserved.
  */
 
-interface PdfPageImage {
+interface KPdfPageImage {
     val width: Int
     val height: Int
 }
