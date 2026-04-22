@@ -10,6 +10,6 @@ interface KPdf {
      */
     fun viewerState(
         source: KPdfSource,
-        config: PdfViewerConfig = PdfViewerConfig.builder().build(),
-    ): PdfViewerState
+        config: KPdfViewerConfig = KPdfViewerConfig.builder().build(),
+    ): KPdf
 }
