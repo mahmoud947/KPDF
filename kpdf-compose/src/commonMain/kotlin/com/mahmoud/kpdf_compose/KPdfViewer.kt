@@ -40,6 +40,7 @@ fun KPdfViewer(
         )
     ) {
         KPdfContent(
+            state = state,
             renderedPage = renderedPage,
             config = state.config,
             modifier = Modifier.fillMaxSize(),

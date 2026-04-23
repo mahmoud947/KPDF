@@ -24,7 +24,7 @@ import com.mahmoud.kpdf_core.api.KPdfSource
 fun App() {
     MaterialTheme {
         val source = KPdfSource.Url(
-            url = "https://ontheline.trincoll.edu/images/bookdown/sample-local-pdf.pdf",
+            url = "https://www.princexml.com/samples/newsletter/drylab.pdf",
             headers = emptyMap(),
         )
         val kPdfState = rememberPdfViewerState(

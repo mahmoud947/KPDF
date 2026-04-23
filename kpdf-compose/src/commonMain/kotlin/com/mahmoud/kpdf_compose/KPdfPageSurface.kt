@@ -13,6 +13,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,12 +28,16 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.mahmoud.kpdf_core.api.KPdfPageBitmap
 import com.mahmoud.kpdf_core.api.KPdfRenderedPageState
 import com.mahmoud.kpdf_core.api.KPdfViewerConfig
-import com.mahmoud.kpdf_core.image.KPlatformImage
+import com.mahmoud.kpdf_core.api.KPdfViewerState
+import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 @Composable
 internal fun KPdfPageSurface(
+    state: KPdfViewerState,
     renderedPage: KPdfRenderedPageState,
     config: KPdfViewerConfig,
     modifier: Modifier = Modifier,
@@ -59,7 +64,8 @@ internal fun KPdfPageSurface(
                 val page = renderedPage.page
 
                 KPdfZoomablePage(
-                    image = page.image,
+                    state = state,
+                    fallbackPage = page,
                     contentDescription = "PDF page ${page.pageIndex + 1}",
                     pageKey = page.pageIndex,
                     config = config,
@@ -80,7 +86,8 @@ internal fun KPdfPageSurface(
 
 @Composable
 private fun KPdfZoomablePage(
-    image: KPlatformImage,
+    state: KPdfViewerState,
+    fallbackPage: KPdfPageBitmap,
     contentDescription: String?,
     pageKey: Any,
     config: KPdfViewerConfig,
@@ -89,6 +96,11 @@ private fun KPdfZoomablePage(
     var scale by remember(pageKey) { mutableStateOf(config.minZoom) }
     var offset by remember(pageKey) { mutableStateOf(Offset.Zero) }
     var viewportSize by remember(pageKey) { mutableStateOf(IntSize.Zero) }
+    var displayedPage by remember(pageKey) { mutableStateOf(fallbackPage) }
+
+    LaunchedEffect(fallbackPage) {
+        displayedPage = fallbackPage
+    }
 
     fun clampOffset(value: Offset, targetScale: Float = scale): Offset {
         val maxX = viewportSize.width * (targetScale - config.minZoom) / 2f
@@ -137,6 +149,39 @@ private fun KPdfZoomablePage(
     } else {
         Modifier
     }
+    val requestedRenderScale = ((if (config.enableZoom) scale else 1f) * 2f)
+        .roundToInt()
+        .coerceAtLeast(2) / 2f
+    val requestedRenderSize = remember(
+        viewportSize,
+        requestedRenderScale,
+    ) {
+        calculateRenderRequest(
+            viewportSize = viewportSize,
+            renderScale = requestedRenderScale,
+        )
+    }
+
+    LaunchedEffect(pageKey, requestedRenderSize) {
+        if (!requestedRenderSize.isValid()) return@LaunchedEffect
+        if (displayedPage.pageIndex == fallbackPage.pageIndex &&
+            displayedPage.width >= requestedRenderSize.width &&
+            displayedPage.height >= requestedRenderSize.height
+        ) {
+            return@LaunchedEffect
+        }
+
+        state.renderPage(
+            pageIndex = fallbackPage.pageIndex,
+            targetWidth = requestedRenderSize.width,
+            targetHeight = requestedRenderSize.height,
+        ).onSuccess { rerenderedPage ->
+            if (rerenderedPage.pageIndex == fallbackPage.pageIndex) {
+                displayedPage = rerenderedPage
+            }
+        }
+    }
+
     val activeScale = if (config.enableZoom) scale else 1f
     val activeOffset = if (config.enableZoom) offset else Offset.Zero
 
@@ -151,7 +196,7 @@ private fun KPdfZoomablePage(
         contentAlignment = Alignment.Center,
     ) {
         KPlatformImageView(
-            image = image,
+            image = displayedPage.image,
             contentDescription = contentDescription,
             modifier = Modifier
                 .fillMaxSize()
@@ -167,3 +212,35 @@ private fun KPdfZoomablePage(
 
 private fun Float.coerceOffset(maxOffset: Float): Float =
     if (maxOffset > 0f) coerceIn(-maxOffset, maxOffset) else 0f
+
+private data class RenderRequest(
+    val width: Int,
+    val height: Int,
+)
+
+private fun calculateRenderRequest(
+    viewportSize: IntSize,
+    renderScale: Float,
+): RenderRequest {
+    if (viewportSize.width <= 0 || viewportSize.height <= 0) {
+        return RenderRequest(width = 0, height = 0)
+    }
+
+    val rawWidth = (viewportSize.width * renderScale).roundToInt().coerceAtLeast(1)
+    val rawHeight = (viewportSize.height * renderScale).roundToInt().coerceAtLeast(1)
+    val area = rawWidth.toLong() * rawHeight.toLong()
+
+    if (area <= MaxRenderPixels) {
+        return RenderRequest(rawWidth, rawHeight)
+    }
+
+    val resizeRatio = sqrt(MaxRenderPixels.toDouble() / area.toDouble()).toFloat()
+    return RenderRequest(
+        width = (rawWidth * resizeRatio).roundToInt().coerceAtLeast(1),
+        height = (rawHeight * resizeRatio).roundToInt().coerceAtLeast(1),
+    )
+}
+
+private fun RenderRequest.isValid(): Boolean = width > 0 && height > 0
+
+private const val MaxRenderPixels: Long = 8_388_608L
