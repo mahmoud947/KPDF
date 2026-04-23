@@ -32,6 +32,8 @@ import com.mahmoud.kpdf_core.api.KPdfPageBitmap
 import com.mahmoud.kpdf_core.api.KPdfRenderedPageState
 import com.mahmoud.kpdf_core.api.KPdfViewerConfig
 import com.mahmoud.kpdf_core.api.KPdfViewerState
+import kotlinx.coroutines.delay
+import kotlin.math.floor
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
@@ -149,38 +151,49 @@ private fun KPdfZoomablePage(
     } else {
         Modifier
     }
-    val requestedRenderScale = ((if (config.enableZoom) scale else 1f) * 2f)
-        .roundToInt()
-        .coerceAtLeast(2) / 2f
-    val requestedRenderSize = remember(
-        viewportSize,
-        requestedRenderScale,
-    ) {
-        calculateRenderRequest(
-            viewportSize = viewportSize,
-            renderScale = requestedRenderScale,
-        )
-    }
+//    val requestedRenderScale = quantizeRenderScale(
+//        scale = if (config.enableZoom) scale else 1f,
+//    )
+//    val requestedRenderSize = remember(
+//        viewportSize,
+//        requestedRenderScale,
+//    ) {
+//        calculateRenderRequest(
+//            viewportSize = viewportSize,
+//            renderScale = requestedRenderScale,
+//        )
+//    }
 
-    LaunchedEffect(pageKey, requestedRenderSize) {
-        if (!requestedRenderSize.isValid()) return@LaunchedEffect
-        if (displayedPage.pageIndex == fallbackPage.pageIndex &&
-            displayedPage.width >= requestedRenderSize.width &&
-            displayedPage.height >= requestedRenderSize.height
-        ) {
-            return@LaunchedEffect
-        }
-
-        state.renderPage(
-            pageIndex = fallbackPage.pageIndex,
-            targetWidth = requestedRenderSize.width,
-            targetHeight = requestedRenderSize.height,
-        ).onSuccess { rerenderedPage ->
-            if (rerenderedPage.pageIndex == fallbackPage.pageIndex) {
-                displayedPage = rerenderedPage
-            }
-        }
-    }
+//    LaunchedEffect(pageKey, requestedRenderSize) {
+//        if (!requestedRenderSize.isValid()) return@LaunchedEffect
+//        if (displayedPage.pageIndex == fallbackPage.pageIndex &&
+//            displayedPage.width >= requestedRenderSize.width &&
+//            displayedPage.height >= requestedRenderSize.height
+//        ) {
+//            return@LaunchedEffect
+//        }
+//
+//        if (requestedRenderScale > 1f) {
+//            delay(RenderUpgradeDelayMillis)
+//        }
+//
+//        if (displayedPage.pageIndex == fallbackPage.pageIndex &&
+//            displayedPage.width >= requestedRenderSize.width &&
+//            displayedPage.height >= requestedRenderSize.height
+//        ) {
+//            return@LaunchedEffect
+//        }
+//
+//        state.renderPage(
+//            pageIndex = fallbackPage.pageIndex,
+//            targetWidth = requestedRenderSize.width,
+//            targetHeight = requestedRenderSize.height,
+//        ).onSuccess { rerenderedPage ->
+//            if (rerenderedPage.pageIndex == fallbackPage.pageIndex) {
+//                displayedPage = rerenderedPage
+//            }
+//        }
+//    }
 
     val activeScale = if (config.enableZoom) scale else 1f
     val activeOffset = if (config.enableZoom) offset else Offset.Zero
@@ -243,4 +256,14 @@ private fun calculateRenderRequest(
 
 private fun RenderRequest.isValid(): Boolean = width > 0 && height > 0
 
+private fun quantizeRenderScale(scale: Float): Float {
+    val normalizedScale = scale.coerceAtLeast(1f)
+    if (normalizedScale <= 1f) return 1f
+
+    val steps = floor((normalizedScale - 1f) / RenderScaleStep).toInt()
+    return 1f + ((steps + 1) * RenderScaleStep)
+}
+
+private const val RenderUpgradeDelayMillis = 120L
+private const val RenderScaleStep = 0.5f
 private const val MaxRenderPixels: Long = 8_388_608L
