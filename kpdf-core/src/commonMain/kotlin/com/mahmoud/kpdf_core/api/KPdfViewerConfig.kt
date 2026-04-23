@@ -9,6 +9,7 @@ class KPdfViewerConfig internal constructor(
     val minZoom: Float,
     val maxZoom: Float,
     val doubleTapZoom: Float,
+    val ramCacheSize: Int,
 ) {
     /**
      * Mutable builder for [KPdfViewerConfig].
@@ -18,6 +19,7 @@ class KPdfViewerConfig internal constructor(
         private var minZoom: Float = 1f
         private var maxZoom: Float = 4f
         private var doubleTapZoom: Float = 2f
+        private var ramCacheSize: Int = DefaultRamCacheSize
 
         fun enableZoom(value: Boolean): Builder = apply {
             enableZoom = value
@@ -43,17 +45,31 @@ class KPdfViewerConfig internal constructor(
             doubleTapZoom = value
         }
 
+        /**
+         * Sets the max number of rendered pages held in RAM for this viewer.
+         *
+         * Use `0` to disable the memory cache.
+         */
+        fun ramCacheSize(value: Int): Builder = apply {
+            require(value >= 0) { "ramCacheSize must be greater than or equal to 0." }
+
+            ramCacheSize = value
+        }
+
         fun build(): KPdfViewerConfig {
             return KPdfViewerConfig(
                 enableZoom = enableZoom,
                 minZoom = minZoom,
                 maxZoom = maxZoom,
                 doubleTapZoom = doubleTapZoom.coerceIn(minZoom, maxZoom),
+                ramCacheSize = ramCacheSize,
             )
         }
     }
 
     companion object {
+        const val DefaultRamCacheSize: Int = 6
+
         /**
          * Starts a new [KPdfViewerConfig] builder.
          */

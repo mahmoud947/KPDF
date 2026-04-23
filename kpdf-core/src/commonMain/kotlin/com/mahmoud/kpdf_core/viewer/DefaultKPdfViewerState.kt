@@ -9,6 +9,9 @@ import com.mahmoud.kpdf_core.api.KPdfRenderedPageState
 import com.mahmoud.kpdf_core.api.KPdfSource
 import com.mahmoud.kpdf_core.api.KPdfViewerConfig
 import com.mahmoud.kpdf_core.api.KPdfViewerState
+import com.mahmoud.kpdf_core.cache.KPdfMemoryPageCache
+import com.mahmoud.kpdf_core.cache.KPdfPageCache
+import com.mahmoud.kpdf_core.cache.KPdfPageCacheKey
 import com.mahmoud.kpdf_core.error.toKPdfError
 import com.mahmoud.kpdf_core.repository.KPdfRepository
 import kotlinx.coroutines.CoroutineScope
@@ -22,7 +25,10 @@ import kotlinx.coroutines.launch
 
 /**
  * Real shared viewer state-holder and controller.
+ * Created by Mahmoud Kamal El-Din on 2026-04-23.
+ * Copyright (c) 2026 KDF. All rights reserved.
  */
+
 class DefaultKPdfViewerState(
     override var source: KPdfSource,
     override val config: KPdfViewerConfig,
@@ -33,6 +39,7 @@ class DefaultKPdfViewerState(
     private val _loadState = MutableStateFlow<KPdfLoadState>(KPdfLoadState.Idle)
     private val _renderedPage = MutableStateFlow<KPdfRenderedPageState>(KPdfRenderedPageState.Idle)
     private val _currentPage = MutableStateFlow(0)
+    private val pageCache: KPdfPageCache = KPdfMemoryPageCache(config.ramCacheSize)
 
     private var document: KPdfDocumentRef? = null
     private var openJob: Job? = null
@@ -134,7 +141,8 @@ class DefaultKPdfViewerState(
             )
         }
 
-        return currentDocument.renderPage(
+        return renderPageWithCache(
+            currentDocument = currentDocument,
             pageIndex = pageIndex,
             targetWidth = targetWidth,
             targetHeight = targetHeight,
@@ -152,10 +160,12 @@ class DefaultKPdfViewerState(
         renderJob = scope.launch {
             _renderedPage.update { KPdfRenderedPageState.Loading }
 
-            currentDocument.renderPage(
+            renderPageWithCache(
+                currentDocument = currentDocument,
                 pageIndex = pageIndex,
                 targetWidth = DefaultTargetWidth,
                 targetHeight = DefaultTargetHeight,
+                zoom = 1f,
             ).fold(
                 onSuccess = { bitmap ->
                     if (generation == renderGeneration) {
@@ -173,9 +183,43 @@ class DefaultKPdfViewerState(
         }
     }
 
+    private suspend fun renderPageWithCache(
+        currentDocument: KPdfDocumentRef,
+        pageIndex: Int,
+        targetWidth: Int,
+        targetHeight: Int,
+        zoom: Float,
+    ): Result<KPdfPageBitmap> {
+        val cacheKey = KPdfPageCacheKey(
+            documentId = currentDocument.id,
+            pageIndex = pageIndex,
+            targetWidth = targetWidth,
+            targetHeight = targetHeight,
+            zoom = zoom
+        )
+
+        pageCache.get(cacheKey)?.let { cachedPage ->
+            return Result.success(cachedPage)
+        }
+
+        val renderResult = currentDocument.renderPage(
+            pageIndex = pageIndex,
+            targetWidth = targetWidth,
+            targetHeight = targetHeight,
+            zoom = zoom
+        )
+
+        renderResult.getOrNull()?.let { renderedPage ->
+            pageCache.put(cacheKey, renderedPage)
+        }
+
+        return renderResult
+    }
+
     private suspend fun closeCurrentDocument() {
         val currentDocument = document ?: return
         document = null
+        pageCache.removeDocument(currentDocument.id)
         repository.close(currentDocument.id)
     }
 
