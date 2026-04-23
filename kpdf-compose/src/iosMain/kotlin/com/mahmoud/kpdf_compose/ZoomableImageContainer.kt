@@ -28,7 +28,7 @@ class ZoomableImageContainer(
     frame: CValue<CGRect>,
     private val minZoom: Double = 1.0,
     private val maxZoom: Double = 4.0,
-    private val scaleStep: Double = 2.0
+    private val doubleTapZoom: Double = 2.0
 ) : UIView(frame) {
 
     private val imageView = UIImageView().apply {
@@ -92,10 +92,10 @@ class ZoomableImageContainer(
     fun handleDoubleTap(recognizer: UITapGestureRecognizer) {
         val currentZoom = scrollView.zoomScale
 
-        val targetZoom = if (currentZoom >= maxZoom) {
+        val targetZoom = if (currentZoom > minZoom) {
             minZoom
         } else {
-            minOf(currentZoom * scaleStep, maxZoom)
+            doubleTapZoom.coerceIn(minZoom, maxZoom)
         }
 
         if (targetZoom == minZoom) {

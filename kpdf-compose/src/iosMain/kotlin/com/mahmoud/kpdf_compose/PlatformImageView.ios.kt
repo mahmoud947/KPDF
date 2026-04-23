@@ -4,10 +4,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
+import com.mahmoud.kpdf_core.api.KPdfPageBitmap
+import com.mahmoud.kpdf_core.api.KPdfViewerConfig
+import com.mahmoud.kpdf_core.api.KPdfViewerState
 import com.mahmoud.kpdf_core.image.KPlatformImage
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.readValue
 import platform.CoreGraphics.CGRectZero
+import platform.UIKit.UIImageView
+import platform.UIKit.UIViewContentMode.UIViewContentModeScaleAspectFit
 
 /*
  * Created by Mahmoud Kamal El-Din on 2026-04-23.
@@ -17,19 +22,43 @@ import platform.CoreGraphics.CGRectZero
 @OptIn(ExperimentalForeignApi::class)
 @Composable
 internal actual fun KPlatformImageView(
-    image: KPlatformImage,
+    page: KPdfPageBitmap,
+    state: KPdfViewerState,
     contentDescription: String?,
+    config: KPdfViewerConfig,
     modifier: Modifier
 ) {
-    val uiImage = image.uiImage ?: return
+    val uiImage = page.image.uiImage ?: return
+
+    if (!config.enableZoom) {
+        UIKitView(
+            factory = {
+                UIImageView().apply {
+                    contentMode = UIViewContentModeScaleAspectFit
+                    clipsToBounds = true
+                    userInteractionEnabled = false
+                }
+            },
+            modifier = modifier,
+            update = { imageView ->
+                imageView.image = uiImage
+            },
+            onRelease = {},
+            properties = UIKitInteropProperties(
+                isInteractive = false,
+                isNativeAccessibilityEnabled = true
+            )
+        )
+        return
+    }
 
     UIKitView(
         factory = {
             ZoomableImageContainer(
                 frame = CGRectZero.readValue(),
-                minZoom = 1.0,
-                maxZoom = 5.0,
-                scaleStep = 2.0
+                minZoom = config.minZoom.toDouble(),
+                maxZoom = config.maxZoom.toDouble(),
+                doubleTapZoom = config.doubleTapZoom.toDouble()
             )
         },
         modifier = modifier,

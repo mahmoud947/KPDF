@@ -2,7 +2,9 @@ package com.mahmoud.kpdf_compose
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.mahmoud.kpdf_core.image.KPlatformImage
+import com.mahmoud.kpdf_core.api.KPdfPageBitmap
+import com.mahmoud.kpdf_core.api.KPdfViewerConfig
+import com.mahmoud.kpdf_core.api.KPdfViewerState
 
 /*
  * Created by Mahmoud Kamal El-Din on 2026-04-23.
@@ -10,7 +12,9 @@ import com.mahmoud.kpdf_core.image.KPlatformImage
  */
 @Composable
 internal expect fun KPlatformImageView(
-    image: KPlatformImage,
+    page: KPdfPageBitmap,
+    state: KPdfViewerState,
     contentDescription: String?,
+    config: KPdfViewerConfig,
     modifier: Modifier = Modifier,
 )

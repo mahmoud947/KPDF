@@ -59,5 +59,6 @@ import kotlinx.coroutines.flow.StateFlow
         pageIndex: Int,
         targetWidth: Int,
         targetHeight: Int,
+        zoom: Float = 1f,
     ): Result<KPdfPageBitmap>
 }

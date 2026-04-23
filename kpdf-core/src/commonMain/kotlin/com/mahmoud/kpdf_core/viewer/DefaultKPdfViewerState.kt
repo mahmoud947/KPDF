@@ -121,6 +121,7 @@ class DefaultKPdfViewerState(
         pageIndex: Int,
         targetWidth: Int,
         targetHeight: Int,
+        zoom: Float,
     ): Result<KPdfPageBitmap> {
         val currentDocument = document
             ?: return Result.failure(
@@ -137,6 +138,7 @@ class DefaultKPdfViewerState(
             pageIndex = pageIndex,
             targetWidth = targetWidth,
             targetHeight = targetHeight,
+            zoom = zoom,
         )
     }
 
