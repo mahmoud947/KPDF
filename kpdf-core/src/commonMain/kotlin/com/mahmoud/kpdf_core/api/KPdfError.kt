@@ -19,7 +19,13 @@ sealed interface KPdfError {
             else -> "Network error while loading the PDF."
         }
     }
+     data object Unauthorized : KPdfError {
+        override val message: String = "The PDF request is unauthorized."
+    }
 
+     data object NotFound : KPdfError {
+        override val message: String = "The requested PDF was not found."
+    }
     data class Unknown(
         override val message: String,
     ) : KPdfError

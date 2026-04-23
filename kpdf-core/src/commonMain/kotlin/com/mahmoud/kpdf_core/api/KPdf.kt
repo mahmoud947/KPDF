@@ -11,5 +11,5 @@ interface KPdf {
     fun viewerState(
         source: KPdfSource,
         config: KPdfViewerConfig = KPdfViewerConfig.builder().build(),
-    ): KPdf
+    ): KPdfViewerState
 }

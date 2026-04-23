@@ -8,8 +8,8 @@ package com.mahmoud.kpdf_core.api
      * returned document for authenticated or negotiated responses.
      */
      data class Url(
-        public val url: String,
-        public val headers: Map<String, String> = emptyMap(),
+         val url: String,
+         val headers: Map<String, String> = emptyMap(),
     ) : KPdfSource
 
 }

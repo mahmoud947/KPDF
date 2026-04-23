@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 /**
  * Real shared viewer state-holder and controller.
  */
-class KDefaultPdfViewerState(
+class DefaultKPdfViewerState(
     override var source: KPdfSource,
     override val config: KPdfViewerConfig,
 
