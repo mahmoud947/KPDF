@@ -6,23 +6,49 @@ package com.mahmoud.kpdf_core.api
  */
 class KPdfViewerConfig internal constructor(
     val enableZoom: Boolean,
+    val minZoom: Float,
+    val maxZoom: Float,
+    val doubleTapZoom: Float,
 ) {
     /**
      * Mutable builder for [KPdfViewerConfig].
      */
     class Builder {
         private var enableZoom: Boolean = true
-
+        private var minZoom: Float = 1f
+        private var maxZoom: Float = 4f
+        private var doubleTapZoom: Float = 2f
 
         fun enableZoom(value: Boolean): Builder = apply {
             enableZoom = value
         }
 
+        /**
+         * Sets the pinch zoom range used by Compose PDF content.
+         */
+        fun zoomRange(minZoom: Float, maxZoom: Float): Builder = apply {
+            require(minZoom > 0f) { "minZoom must be greater than 0." }
+            require(maxZoom >= minZoom) { "maxZoom must be greater than or equal to minZoom." }
+
+            this.minZoom = minZoom
+            this.maxZoom = maxZoom
+        }
+
+        /**
+         * Sets the zoom level used when the page is double-tapped.
+         */
+        fun doubleTapZoom(value: Float): Builder = apply {
+            require(value > 0f) { "doubleTapZoom must be greater than 0." }
+
+            doubleTapZoom = value
+        }
+
         fun build(): KPdfViewerConfig {
-
-
             return KPdfViewerConfig(
                 enableZoom = enableZoom,
+                minZoom = minZoom,
+                maxZoom = maxZoom,
+                doubleTapZoom = doubleTapZoom.coerceIn(minZoom, maxZoom),
             )
         }
     }

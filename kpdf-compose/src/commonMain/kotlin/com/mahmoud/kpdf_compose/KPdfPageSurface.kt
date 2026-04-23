@@ -1,6 +1,8 @@
 package com.mahmoud.kpdf_compose
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,20 +13,30 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.mahmoud.kpdf_core.api.KPdfRenderedPageState
-import kotlinx.coroutines.FlowPreview
+import com.mahmoud.kpdf_core.api.KPdfViewerConfig
+import com.mahmoud.kpdf_core.image.KPlatformImage
 
 @Composable
 internal fun KPdfPageSurface(
     renderedPage: KPdfRenderedPageState,
+    config: KPdfViewerConfig,
     modifier: Modifier = Modifier,
 ) {
-
-
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(18.dp))
@@ -46,9 +58,11 @@ internal fun KPdfPageSurface(
             is KPdfRenderedPageState.Ready -> {
                 val page = renderedPage.page
 
-                KPlatformImageView(
+                KPdfZoomablePage(
                     image = page.image,
                     contentDescription = "PDF page ${page.pageIndex + 1}",
+                    pageKey = page.pageIndex,
+                    config = config,
                     modifier = Modifier.fillMaxSize(),
                 )
 
@@ -63,3 +77,93 @@ internal fun KPdfPageSurface(
         }
     }
 }
+
+@Composable
+private fun KPdfZoomablePage(
+    image: KPlatformImage,
+    contentDescription: String?,
+    pageKey: Any,
+    config: KPdfViewerConfig,
+    modifier: Modifier = Modifier,
+) {
+    var scale by remember(pageKey) { mutableStateOf(config.minZoom) }
+    var offset by remember(pageKey) { mutableStateOf(Offset.Zero) }
+    var viewportSize by remember(pageKey) { mutableStateOf(IntSize.Zero) }
+
+    fun clampOffset(value: Offset, targetScale: Float = scale): Offset {
+        val maxX = viewportSize.width * (targetScale - config.minZoom) / 2f
+        val maxY = viewportSize.height * (targetScale - config.minZoom) / 2f
+
+        return Offset(
+            x = value.x.coerceOffset(maxX),
+            y = value.y.coerceOffset(maxY),
+        )
+    }
+
+    fun updateScale(targetScale: Float) {
+        scale = targetScale.coerceIn(config.minZoom, config.maxZoom)
+        offset = clampOffset(offset, scale)
+    }
+
+    fun resetZoom() {
+        scale = config.minZoom
+        offset = Offset.Zero
+    }
+
+    val transformableState = rememberTransformableState { zoomChange, panChange, _ ->
+        val nextScale = (scale * zoomChange).coerceIn(config.minZoom, config.maxZoom)
+        scale = nextScale
+        offset = if (nextScale > config.minZoom) {
+            clampOffset(offset + panChange, nextScale)
+        } else {
+            Offset.Zero
+        }
+    }
+
+    val gestureModifier = if (config.enableZoom) {
+        Modifier
+            .pointerInput(pageKey, config.minZoom, config.doubleTapZoom) {
+                detectTapGestures(
+                    onDoubleTap = {
+                        if (scale > config.minZoom) {
+                            resetZoom()
+                        } else {
+                            updateScale(config.doubleTapZoom)
+                        }
+                    },
+                )
+            }
+            .transformable(transformableState)
+    } else {
+        Modifier
+    }
+    val activeScale = if (config.enableZoom) scale else 1f
+    val activeOffset = if (config.enableZoom) offset else Offset.Zero
+
+    Box(
+        modifier = modifier
+            .clipToBounds()
+            .onSizeChanged { size ->
+                viewportSize = size
+                offset = clampOffset(offset)
+            }
+            .then(gestureModifier),
+        contentAlignment = Alignment.Center,
+    ) {
+        KPlatformImageView(
+            image = image,
+            contentDescription = contentDescription,
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer(
+                    scaleX = activeScale,
+                    scaleY = activeScale,
+                    translationX = activeOffset.x,
+                    translationY = activeOffset.y,
+                ),
+        )
+    }
+}
+
+private fun Float.coerceOffset(maxOffset: Float): Float =
+    if (maxOffset > 0f) coerceIn(-maxOffset, maxOffset) else 0f
