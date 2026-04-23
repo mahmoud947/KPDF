@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mahmoud.kpdf_core.api.KPdfRenderedPageState
 import com.mahmoud.kpdf_core.api.KPdfViewerConfig
+import com.mahmoud.kpdf_core.api.KPdfViewerState
 
 /*
  * Created by Mahmoud Kamal El-Din on 2026-04-23.
@@ -16,6 +17,7 @@ import com.mahmoud.kpdf_core.api.KPdfViewerConfig
  */
 @Composable
 internal fun KPdfContent(
+    state: KPdfViewerState,
     renderedPage: KPdfRenderedPageState,
     config: KPdfViewerConfig,
     modifier: Modifier = Modifier,
@@ -27,6 +29,7 @@ internal fun KPdfContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         KPdfPageSurface(
+            state = state,
             renderedPage = renderedPage,
             config = config,
             modifier = Modifier
