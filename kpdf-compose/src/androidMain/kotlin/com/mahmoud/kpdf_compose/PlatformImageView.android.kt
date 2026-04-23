@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.layout.ContentScale
 import com.mahmoud.kpdf_core.image.KPlatformImage
 
@@ -23,5 +24,6 @@ internal actual fun KPlatformImageView(
         contentDescription = contentDescription,
         modifier = modifier,
         contentScale = ContentScale.Fit,
+        filterQuality = FilterQuality.High,
     )
 }
