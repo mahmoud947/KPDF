@@ -4,9 +4,12 @@ import com.mahmoud.kpdf_core.api.KPdf
 import com.mahmoud.kpdf_core.api.KPdfSource
 import com.mahmoud.kpdf_core.api.KPdfViewerConfig
 import com.mahmoud.kpdf_core.api.KPdfViewerState
+import com.mahmoud.kpdf_core.repository.KPdfRepository
 import com.mahmoud.kpdf_core.viewer.DefaultKPdfViewerState
 
-class DefaultKPdf: KPdf {
+class DefaultKPdf(
+   private val repository: KPdfRepository
+): KPdf {
     override fun viewerState(
         source: KPdfSource,
         config: KPdfViewerConfig,
@@ -14,5 +17,8 @@ class DefaultKPdf: KPdf {
         DefaultKPdfViewerState(
             source = source,
             config = config,
+            repository = repository
         )
 }
+
+

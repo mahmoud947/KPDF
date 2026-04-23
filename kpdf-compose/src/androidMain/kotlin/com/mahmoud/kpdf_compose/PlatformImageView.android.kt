@@ -7,6 +7,10 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import com.mahmoud.kpdf_core.image.KPlatformImage
 
+/*
+ * Created by Mahmoud Kamal El-Din on 2026-04-23.
+ * Copyright (c) 2026 KDF. All rights reserved.
+ */
 @Composable
 internal actual fun KPlatformImageView(
     image: KPlatformImage,

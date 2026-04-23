@@ -8,6 +8,13 @@ sealed interface KPdfError {
     val message: String
 
 
+    data class FileNotFound(
+        val path: String? = null,
+    ) : KPdfError {
+        override val message: String = path?.let { "PDF file was not found: $it" }
+            ?: "PDF file was not found."
+    }
+
     data class NetworkError(
         val statusCode: Int? = null,
         val reason: String? = null,
@@ -19,13 +26,19 @@ sealed interface KPdfError {
             else -> "Network error while loading the PDF."
         }
     }
-     data object Unauthorized : KPdfError {
+
+    data object Unauthorized : KPdfError {
         override val message: String = "The PDF request is unauthorized."
     }
 
-     data object NotFound : KPdfError {
+    data object NotFound : KPdfError {
         override val message: String = "The requested PDF was not found."
     }
+
+    data object CorruptedDocument : KPdfError {
+        override val message: String = "The PDF document appears to be corrupted."
+    }
+
     data class Unknown(
         override val message: String,
     ) : KPdfError

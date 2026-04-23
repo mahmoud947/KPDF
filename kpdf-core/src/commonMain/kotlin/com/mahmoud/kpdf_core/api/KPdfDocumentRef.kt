@@ -22,5 +22,7 @@ interface KPdfDocumentRef {
         zoom: Float = 1f,
     ): Result<KPdfPageBitmap>
 
+     fun close()
+
 
 }

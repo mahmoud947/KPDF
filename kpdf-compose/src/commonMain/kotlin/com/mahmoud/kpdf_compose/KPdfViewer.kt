@@ -29,7 +29,6 @@ fun KPdfViewer(
     state: KPdfViewerState,
     modifier: Modifier = Modifier,
 ) {
-    val loadState by state.loadState.collectAsState()
     val renderedPage by state.renderedPage.collectAsState()
 
     Card(
@@ -40,7 +39,7 @@ fun KPdfViewer(
             containerColor = MaterialTheme.colorScheme.surface,
         )
     ) {
-        KPdfReadyContent(
+        KPdfContent(
             renderedPage = renderedPage,
             config = state.config,
             modifier = Modifier.fillMaxSize(),

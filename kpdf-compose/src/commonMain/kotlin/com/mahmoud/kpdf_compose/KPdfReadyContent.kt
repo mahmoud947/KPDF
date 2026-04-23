@@ -12,8 +12,12 @@ import androidx.compose.ui.unit.dp
 import com.mahmoud.kpdf_core.api.KPdfRenderedPageState
 import com.mahmoud.kpdf_core.api.KPdfViewerConfig
 
+/*
+ * Created by Mahmoud Kamal El-Din on 2026-04-23.
+ * Copyright (c) 2026 KDF. All rights reserved.
+ */
 @Composable
-internal fun KPdfReadyContent(
+internal fun KPdfContent(
     renderedPage: KPdfRenderedPageState,
     config: KPdfViewerConfig,
     modifier: Modifier = Modifier,

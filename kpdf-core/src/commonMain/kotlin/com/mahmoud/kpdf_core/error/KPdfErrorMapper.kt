@@ -7,11 +7,11 @@ import com.mahmoud.kpdf_core.api.KPdfException
  * Created by Mahmoud Kamal El-Din on 2026-04-23.
  * Copyright (c) 2026 KDF. All rights reserved.
  */
- interface PdfErrorMapper {
+ interface KPdfErrorMapper {
      fun map(throwable: Throwable): KPdfError
 }
 
- object DefaultPdfErrorMapper : PdfErrorMapper {
+ object DefaultKPdfErrorMapper : KPdfErrorMapper {
     override fun map(throwable: Throwable): KPdfError =
         when (throwable) {
             is KPdfException -> throwable.error
@@ -41,5 +41,8 @@ private fun KPdfHttpException.toPdfError(): KPdfError =
 internal fun kpdfFailure(error: KPdfError): Result<Nothing> =
     Result.failure(KPdfException(error))
 
-internal fun kpdfFailure(throwable: Throwable, mapper: PdfErrorMapper = DefaultPdfErrorMapper): Result<Nothing> =
+internal fun kpdfFailure(throwable: Throwable, mapper: KPdfErrorMapper = DefaultKPdfErrorMapper): Result<Nothing> =
     kpdfFailure(mapper.map(throwable))
+
+ fun Throwable.toKPdfError(): KPdfError =
+    (this as? KPdfException)?.error ?: KPdfError.Unknown(message ?: "Unknown PDF error.")
