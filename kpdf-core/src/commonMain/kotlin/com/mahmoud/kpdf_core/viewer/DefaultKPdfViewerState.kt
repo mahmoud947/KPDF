@@ -32,6 +32,7 @@ class DefaultKPdfViewerState(
 
     private val _loadState = MutableStateFlow<KPdfLoadState>(KPdfLoadState.Idle)
     private val _renderedPage = MutableStateFlow<KPdfRenderedPageState>(KPdfRenderedPageState.Idle)
+    private val _currentPage = MutableStateFlow(0)
 
     private var document: KPdfDocumentRef? = null
     private var openJob: Job? = null
@@ -63,7 +64,7 @@ class DefaultKPdfViewerState(
                     }
 
                     if (opened.pageCount > 0) {
-                        renderCurrentPage(pageIndex = 0)
+                        renderCurrentPage(pageIndex = _currentPage.value)
                     } else {
                         _renderedPage.update {
                             KPdfRenderedPageState.Error(
@@ -83,6 +84,26 @@ class DefaultKPdfViewerState(
 
     override fun retry() {
         open(source)
+    }
+
+    override fun nextPage() {
+        goToPage(_currentPage.value + 1)
+    }
+
+    override fun previousPage() {
+        goToPage(_currentPage.value - 1)
+    }
+
+    override fun goToPage(index: Int) {
+        val currentDocument = document ?: return
+
+        if (index !in 0 until currentDocument.pageCount)
+            return
+
+        scope.launch {
+            _currentPage.update { index }
+            renderCurrentPage(pageIndex = index)
+        }
     }
 
     override fun close() {

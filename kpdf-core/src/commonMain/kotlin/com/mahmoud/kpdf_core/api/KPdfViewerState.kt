@@ -26,6 +26,26 @@ import kotlinx.coroutines.flow.StateFlow
      */
     public fun retry()
 
+
+    /**
+     * Navigates to and renders the next page of the document.
+     */
+     fun nextPage()
+
+    /**
+     * Navigates to the page immediately preceding the currently rendered page.
+     */
+     fun previousPage()
+
+    /**
+     * Navigates the viewer to the specified [pageIndex].
+     *
+     * This updates the state to trigger the rendering of the requested page.
+     *
+     * @param pageIndex The 0-based index of the page to display.
+     */
+     fun goToPage(index: Int)
+
     /**
      * Closes the active document and releases resources owned by this state.
      */
