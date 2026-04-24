@@ -11,6 +11,10 @@ sealed interface KPdfOpenDocumentState {
         val mimeTypes: List<String>,
     ) : KPdfOpenDocumentState
 
+    data class Success(
+        val source: KPdfSource,
+    ) : KPdfOpenDocumentState
+
     data object Cancelled : KPdfOpenDocumentState
 
     data class Error(

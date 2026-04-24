@@ -36,6 +36,14 @@ fun App() {
         )
         val openDocumentState by kPdfState.openDocumentState.collectAsState()
         val saveState by kPdfState.saveState.collectAsState()
+
+        LaunchedEffect(openDocumentState) {
+            val selectedSource = (openDocumentState as? KPdfOpenDocumentState.Success)?.source
+                ?: return@LaunchedEffect
+
+            kPdfState.open(selectedSource)
+        }
+
         Scaffold(
             modifier = Modifier.fillMaxSize(),
         ) { paddingValues ->
@@ -91,9 +99,10 @@ fun App() {
 
 private fun openDocumentMessage(state: KPdfOpenDocumentState): String? =
     when (state) {
-        KPdfOpenDocumentState.Idle -> null
+        is KPdfOpenDocumentState.Idle -> null
         is KPdfOpenDocumentState.AwaitingSelection -> "Choose a PDF to open."
-        KPdfOpenDocumentState.Cancelled -> "Open PDF was cancelled."
+        is KPdfOpenDocumentState.Success -> "PDF selected."
+        is KPdfOpenDocumentState.Cancelled -> "Open PDF was cancelled."
         is KPdfOpenDocumentState.Error -> state.reason.message
     }
 

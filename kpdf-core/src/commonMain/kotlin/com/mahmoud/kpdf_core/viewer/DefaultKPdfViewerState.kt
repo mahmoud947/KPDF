@@ -242,8 +242,9 @@ internal class DefaultKPdfViewerState(
         activeOpenDocumentRequest = null
         when (result) {
             is KPdfOpenDocumentResult.Success -> {
-                _openDocumentState.update { KPdfOpenDocumentState.Idle }
-                open(result.source)
+                _openDocumentState.update {
+                    KPdfOpenDocumentState.Success(result.source)
+                }
             }
 
             is KPdfOpenDocumentResult.Failure -> {
