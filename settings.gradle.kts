@@ -1,6 +1,7 @@
 rootProject.name = "KPDF"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
+
 pluginManagement {
     repositories {
         google {
