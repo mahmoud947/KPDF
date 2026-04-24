@@ -11,6 +11,7 @@ import com.mahmoud.kpdf_core.network.KPdfRemoteDataSource
 import com.mahmoud.kpdf_core.repository.DefaultKKPdfRepository
 import com.mahmoud.kpdf_core.repository.KPdfDocumentFactory
 import com.mahmoud.kpdf_core.source.KPdfSourceResolverImpl
+import com.mahmoud.kpdf_core.source.types.Base64KPdfSourceStrategy
 import com.mahmoud.kpdf_core.source.types.UrlKPdfSourceStrategy
 
 actual object KPdfFactory {
@@ -22,6 +23,7 @@ actual object KPdfFactory {
                 remoteDataSource = remoteDataSource,
                 fileSystem = fileSystem,
             ),
+            base64Strategy = Base64KPdfSourceStrategy(),
         )
         return DefaultKPdf(
             repository = DefaultKKPdfRepository(

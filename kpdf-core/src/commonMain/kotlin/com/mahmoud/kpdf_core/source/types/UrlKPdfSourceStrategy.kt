@@ -1,7 +1,7 @@
 package com.mahmoud.kpdf_core.source.types
 
 import com.mahmoud.kpdf_core.api.KPdfSource
-import com.mahmoud.kpdf_core.api.cacheKey
+import com.mahmoud.kpdf_core.cache.cacheKey
 import com.mahmoud.kpdf_core.error.DefaultKPdfErrorMapper
 import com.mahmoud.kpdf_core.error.KPdfErrorMapper
 import com.mahmoud.kpdf_core.error.KPdfIoException
@@ -10,11 +10,14 @@ import com.mahmoud.kpdf_core.filesystem.KPdfFileSystem
 import com.mahmoud.kpdf_core.network.KPdfRemoteDataSource
 import com.mahmoud.kpdf_core.source.KPdfSourceStrategy
 import com.mahmoud.kpdf_core.source.ResolvedKPdfSource
+import com.mahmoud.kpdf_core.utils.fingerprint
 import kotlinx.coroutines.ensureActive
 import kotlin.coroutines.coroutineContext
 
-/**
+/*
  * Resolves remote PDFs by streaming them to a temporary file.
+ * Created by Mahmoud Kamal El-Din on 2026-04-22.
+ * Copyright (c) 2026 KDF. All rights reserved.
  */
  class UrlKPdfSourceStrategy(
     private val remoteDataSource: KPdfRemoteDataSource,
@@ -99,15 +102,6 @@ import kotlin.coroutines.coroutineContext
     private suspend fun buildCachedPdfPath(source: KPdfSource.Url): String {
         val cacheDirectory = fileSystem.createCacheDirectory(name = SourceCacheDirectoryName)
         return cacheDirectory.trimEnd('/') + "/" + source.cacheKey().fingerprint() + ".pdf"
-    }
-
-    private fun String.fingerprint(): String {
-        var hash = 1469598103934665603UL
-        encodeToByteArray().forEach { byte ->
-            hash = hash xor byte.toUByte().toULong()
-            hash *= 1099511628211UL
-        }
-        return hash.toString(16)
     }
 
     private companion object {

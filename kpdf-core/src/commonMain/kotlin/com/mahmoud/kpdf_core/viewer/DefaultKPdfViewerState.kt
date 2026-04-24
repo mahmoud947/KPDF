@@ -9,10 +9,10 @@ import com.mahmoud.kpdf_core.api.KPdfRenderedPageState
 import com.mahmoud.kpdf_core.api.KPdfSource
 import com.mahmoud.kpdf_core.api.KPdfViewerConfig
 import com.mahmoud.kpdf_core.api.KPdfViewerState
-import com.mahmoud.kpdf_core.api.cacheKey
 import com.mahmoud.kpdf_core.cache.KPdfMemoryPageCache
 import com.mahmoud.kpdf_core.cache.KPdfPageCache
 import com.mahmoud.kpdf_core.cache.KPdfPageCacheKey
+import com.mahmoud.kpdf_core.cache.cacheKey
 import com.mahmoud.kpdf_core.error.toKPdfError
 import com.mahmoud.kpdf_core.repository.KPdfRepository
 import kotlinx.coroutines.CancellationException

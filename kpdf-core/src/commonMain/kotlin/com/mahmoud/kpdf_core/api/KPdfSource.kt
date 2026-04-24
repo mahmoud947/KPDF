@@ -1,5 +1,15 @@
 package com.mahmoud.kpdf_core.api
 
+import com.mahmoud.kpdf_core.utils.fingerprint
+import com.mahmoud.kpdf_core.utils.normalizedBase64
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
+
+/*
+ * Created by Mahmoud Kamal El-Din on 2026-04-24.
+ * Copyright (c) 2026 KDF. All rights reserved.
+ */
+
  sealed interface KPdfSource {
     /**
      * Remote PDF loaded through the SDK source pipeline.
@@ -12,25 +22,15 @@ package com.mahmoud.kpdf_core.api
          val headers: Map<String, String> = emptyMap(),
     ) : KPdfSource
 
+    /**
+     * Inline Base64-encoded PDF content.
+     *
+     * Supports both raw Base64 strings and data URLs such as
+     * `data:application/pdf;base64,...`.
+     */
+    data class Base64(
+        val value: String,
+    ) : KPdfSource
+
 }
 
-internal fun KPdfSource.cacheKey(): String = when (this) {
-    is KPdfSource.Url -> {
-        buildString {
-            append("url:")
-            append(url)
-
-            if (headers.isNotEmpty()) {
-                append("|headers:")
-                headers.entries
-                    .sortedBy { it.key }
-                    .forEach { entry ->
-                        append(entry.key)
-                        append('=')
-                        append(entry.value)
-                        append(';')
-                    }
-            }
-        }
-    }
-}

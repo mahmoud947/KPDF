@@ -13,9 +13,11 @@ import com.mahmoud.kpdf_core.api.KPdfSource
 
 class KPdfSourceResolverImpl(
     private val urlStrategy: KPdfSourceStrategy<KPdfSource.Url>,
+    private val base64Strategy: KPdfSourceStrategy<KPdfSource.Base64>,
 ) : KPdfSourceResolver {
     override suspend fun resolve(source: KPdfSource): Result<ResolvedKPdfSource> =
         when (source) {
             is KPdfSource.Url -> urlStrategy.resolve(source)
+            is KPdfSource.Base64 -> base64Strategy.resolve(source)
         }
 }

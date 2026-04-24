@@ -19,14 +19,16 @@ import com.mahmoud.kpdf_compose.KPdfViewer
 import com.mahmoud.kpdf_compose.rememberPdfViewerState
 import com.mahmoud.kpdf_core.api.KPdfSource
 import com.mahmoud.kpdf_core.api.KPdfViewerConfig
+import kotlinx.coroutines.runBlocking
+import kpdf.composeapp.generated.resources.Res
 
 @Composable
 @Preview
 fun App() {
     MaterialTheme {
-        val source = KPdfSource.Url(
-            url = "https://www.princexml.com/samples/newsletter/drylab.pdf",
-            headers = emptyMap(),
+        val base64 = runBlocking { Res.readBytes("files/base_64_pdf.text").decodeToString() }
+        val source = KPdfSource.Base64(
+           value = base64
         )
         val kPdfState = rememberPdfViewerState(
             source = source,
