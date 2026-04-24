@@ -18,6 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.mahmoud.kpdf_compose.KPdfViewer
 import com.mahmoud.kpdf_compose.rememberPdfViewerState
 import com.mahmoud.kpdf_core.api.KPdfSource
+import com.mahmoud.kpdf_core.api.KPdfViewerConfig
 
 @Composable
 @Preview
@@ -29,6 +30,7 @@ fun App() {
         )
         val kPdfState = rememberPdfViewerState(
             source = source,
+            config = KPdfViewerConfig.builder().preloadPageCount(1).build()
         )
         Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -54,7 +56,5 @@ fun App() {
                 }
             }
         }
-
-
     }
 }
