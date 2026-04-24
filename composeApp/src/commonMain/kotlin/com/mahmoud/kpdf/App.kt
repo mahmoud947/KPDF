@@ -22,7 +22,7 @@ import com.mahmoud.kpdf_core.api.KPdfSaveState
 import com.mahmoud.kpdf_core.api.KPdfSource
 import com.mahmoud.kpdf_core.api.KPdfViewerConfig
 import kotlinx.coroutines.runBlocking
-import kpdf.composeapp.generated.resources.Res
+import com.mahmoud.kpdf.composeapp.generated.resources.Res
 
 @Composable
 @Preview

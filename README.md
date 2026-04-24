@@ -1,35 +1,86 @@
-This is a Kotlin Multiplatform project targeting Android, iOS.
+# KPDF
 
-* [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./composeApp/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./composeApp/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./composeApp/src/jvmMain/kotlin)
-    folder is the appropriate location.
+KPDF is a Kotlin Multiplatform PDF library for Android and iOS with a Compose Multiplatform viewer layer.
 
-* [/iosApp](./iosApp/iosApp) contains iOS applications. Even if you’re sharing your UI with Compose Multiplatform,
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
+## Modules
 
-### Build and Run Android Application
+- `kpdf-core`: shared PDF loading, rendering, caching, save/export, and local picker state APIs
+- `kpdf-compose`: Compose viewer and platform integrations for save/open flows
+- `composeApp`: sample app used to exercise the library
 
-To build and run the development version of the Android app, use the run configuration from the run widget
-in your IDE’s toolbar or build it directly from the terminal:
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:assembleDebug
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:assembleDebug
-  ```
+## Current Features
 
-### Build and Run iOS Application
+- URL, Base64, bytes, and resource-backed PDF sources
+- RAM page cache
+- disk page cache
+- remote source persistence for offline reopen
+- configurable page preloading
+- save/export flow from `KPdfViewerState`
+- open-from-device flow from `KPdfViewerState`
+- Android and iOS Compose support
 
-To build and run the development version of the iOS app, use the run configuration from the run widget
-in your IDE’s toolbar or open the [/iosApp](./iosApp) directory in Xcode and run it from there.
+## Quick Start
 
----
+```kotlin
+@Composable
+fun PdfScreen(source: KPdfSource) {
+    val viewerState = rememberPdfViewerState(
+        source = source,
+        config = KPdfViewerConfig.builder()
+            .ramCacheSize(6)
+            .diskCacheSize(24)
+            .preloadPageCount(2)
+            .build(),
+    )
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+    KPdfViewer(state = viewerState)
+}
+```
+
+## Open A Local PDF
+
+The library returns the selected source through `openDocumentState`. The app decides whether to replace the current document.
+
+```kotlin
+val openState by viewerState.openDocumentState.collectAsState()
+
+LaunchedEffect(openState) {
+    val selectedSource = (openState as? KPdfOpenDocumentState.Success)?.source
+        ?: return@LaunchedEffect
+
+    viewerState.open(selectedSource)
+}
+
+Button(onClick = { viewerState.requestOpenFromDevice() }) {
+    Text("Open Local")
+}
+```
+
+## Save The Current PDF
+
+```kotlin
+Button(onClick = { viewerState.requestSave() }) {
+    Text("Save")
+}
+```
+
+## Documentation
+
+- Integration guide: [docs/INTEGRATION.md](/Users/mahmoud.kkamal/AndroidStudioProjects/KPDF/docs/INTEGRATION.md:1)
+- Deployment guide: [docs/DEPLOYMENT.md](/Users/mahmoud.kkamal/AndroidStudioProjects/KPDF/docs/DEPLOYMENT.md:1)
+
+## Prepare For Publishing
+
+Publishing infrastructure is included for `kpdf-core` and `kpdf-compose`.
+
+Before publishing externally, replace the placeholder metadata in [gradle.properties](/Users/mahmoud.kkamal/AndroidStudioProjects/KPDF/gradle.properties:1), then follow [docs/DEPLOYMENT.md](/Users/mahmoud.kkamal/AndroidStudioProjects/KPDF/docs/DEPLOYMENT.md:1).
+
+## Verification
+
+```bash
+./gradlew \
+  :kpdf-core:testAndroidHostTest \
+  :kpdf-core:compileKotlinIosSimulatorArm64 \
+  :kpdf-compose:compileKotlinIosSimulatorArm64 \
+  :composeApp:compileDebugKotlinAndroid
+```

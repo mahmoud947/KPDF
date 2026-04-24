@@ -2,10 +2,13 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidKotlinMultiplatformLibrary)
     alias(libs.plugins.androidLint)
+    id("maven-publish")
+    id("signing")
 }
 
-kotlin {
+description = "Core Kotlin Multiplatform PDF engine for KPDF."
 
+kotlin {
     // Target declarations - add or remove as needed below. These define
     // which platforms this KMP module supports.
     // See: https://kotlinlang.org/docs/multiplatform-discover-project.html#targets
