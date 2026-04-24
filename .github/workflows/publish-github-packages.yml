@@ -45,21 +45,20 @@ jobs:
           echo "Tag: ${GITHUB_REF_NAME}"
           ./gradlew --version
 
-      - name: Verify tag matches VERSION_NAME
+      - name: Derive version from tag
         shell: bash
         run: |
           set -euo pipefail
           TAG_VERSION="${GITHUB_REF_NAME#v}"
-          GRADLE_VERSION="$(grep '^VERSION_NAME=' gradle.properties | cut -d'=' -f2)"
           echo "Tag version: ${TAG_VERSION}"
-          echo "Gradle VERSION_NAME: ${GRADLE_VERSION}"
-          if [[ "${TAG_VERSION}" != "${GRADLE_VERSION}" ]]; then
-            echo "Tag version does not match VERSION_NAME in gradle.properties" >&2
-            exit 1
-          fi
+          echo "VERSION_NAME=${TAG_VERSION}" >> "$GITHUB_ENV"
 
       - name: List publish tasks
         run: ./gradlew tasks --group publishing --stacktrace
+        env:
+          ORG_GRADLE_PROJECT_VERSION_NAME: ${{ env.VERSION_NAME }}
 
       - name: Publish to GitHub Packages
         run: ./gradlew publishAllPublicationsToGithubPackagesRepository --stacktrace --info
+        env:
+          ORG_GRADLE_PROJECT_VERSION_NAME: ${{ env.VERSION_NAME }}
