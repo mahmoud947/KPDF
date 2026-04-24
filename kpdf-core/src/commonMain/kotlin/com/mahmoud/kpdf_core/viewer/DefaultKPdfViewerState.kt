@@ -4,6 +4,9 @@ import com.mahmoud.kpdf_core.api.KPdfDocumentRef
 import com.mahmoud.kpdf_core.api.KPdfError
 import com.mahmoud.kpdf_core.api.KPdfException
 import com.mahmoud.kpdf_core.api.KPdfLoadState
+import com.mahmoud.kpdf_core.api.KPdfOpenDocumentRequest
+import com.mahmoud.kpdf_core.api.KPdfOpenDocumentResult
+import com.mahmoud.kpdf_core.api.KPdfOpenDocumentState
 import com.mahmoud.kpdf_core.api.KPdfPageBitmap
 import com.mahmoud.kpdf_core.api.KPdfRenderedPageState
 import com.mahmoud.kpdf_core.api.KPdfSaveRequest
@@ -54,6 +57,11 @@ internal class DefaultKPdfViewerState(
 
     private val _loadState = MutableStateFlow<KPdfLoadState>(KPdfLoadState.Idle)
     private val _renderedPage = MutableStateFlow<KPdfRenderedPageState>(KPdfRenderedPageState.Idle)
+    private val _openDocumentState = MutableStateFlow<KPdfOpenDocumentState>(KPdfOpenDocumentState.Idle)
+    private val _openDocumentRequests = MutableSharedFlow<KPdfOpenDocumentRequest>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
     private val _saveState = MutableStateFlow<KPdfSaveState>(KPdfSaveState.Idle)
     private val _saveRequests = MutableSharedFlow<KPdfSaveRequest>(
         extraBufferCapacity = 1,
@@ -70,11 +78,15 @@ internal class DefaultKPdfViewerState(
     private var preloadJob: Job? = null
     private var saveJob: Job? = null
     private var renderGeneration = 0
+    private var nextOpenDocumentRequestId = 0L
     private var nextSaveRequestId = 0L
+    private var activeOpenDocumentRequest: KPdfOpenDocumentRequest? = null
     private var activeSaveRequest: KPdfSaveRequest? = null
 
     override val loadState: StateFlow<KPdfLoadState> = _loadState
     override val renderedPage: StateFlow<KPdfRenderedPageState> = _renderedPage
+    override val openDocumentState: StateFlow<KPdfOpenDocumentState> = _openDocumentState
+    override val openDocumentRequests: Flow<KPdfOpenDocumentRequest> = _openDocumentRequests.asSharedFlow()
     override val saveState: StateFlow<KPdfSaveState> = _saveState
     override val saveRequests: Flow<KPdfSaveRequest> = _saveRequests.asSharedFlow()
 
@@ -83,6 +95,7 @@ internal class DefaultKPdfViewerState(
         openJob?.cancel()
         renderJob?.cancel()
         preloadJob?.cancel()
+        resetOpenDocumentFlow()
         resetSaveFlow()
 
         openJob = scope.launch {
@@ -150,6 +163,7 @@ internal class DefaultKPdfViewerState(
         openJob?.cancel()
         renderJob?.cancel()
         preloadJob?.cancel()
+        resetOpenDocumentFlow()
         resetSaveFlow()
 
         scope.launch {
@@ -192,6 +206,57 @@ internal class DefaultKPdfViewerState(
 
     override suspend fun exportPdf(): Result<ByteArray> =
         repository.export(source)
+
+    override fun requestOpenFromDevice(
+        mimeTypes: List<String>,
+    ) {
+        if (activeOpenDocumentRequest != null) return
+
+        val normalizedMimeTypes = mimeTypes
+            .map(String::trim)
+            .filter(String::isNotEmpty)
+            .ifEmpty { listOf(KPdfOpenDocumentRequest.PdfMimeType) }
+        val request = KPdfOpenDocumentRequest(
+            requestId = ++nextOpenDocumentRequestId,
+            mimeTypes = normalizedMimeTypes,
+        )
+
+        activeOpenDocumentRequest = request
+        _openDocumentState.update {
+            KPdfOpenDocumentState.AwaitingSelection(
+                requestId = request.requestId,
+                mimeTypes = request.mimeTypes,
+            )
+        }
+        _openDocumentRequests.tryEmit(request)
+    }
+
+    override fun onOpenFromDeviceResult(
+        requestId: Long,
+        result: KPdfOpenDocumentResult,
+    ) {
+        val request = activeOpenDocumentRequest
+            ?.takeIf { it.requestId == requestId }
+            ?: return
+
+        activeOpenDocumentRequest = null
+        when (result) {
+            is KPdfOpenDocumentResult.Success -> {
+                _openDocumentState.update { KPdfOpenDocumentState.Idle }
+                open(result.source)
+            }
+
+            is KPdfOpenDocumentResult.Failure -> {
+                _openDocumentState.update {
+                    KPdfOpenDocumentState.Error(result.reason)
+                }
+            }
+
+            KPdfOpenDocumentResult.Cancelled -> {
+                _openDocumentState.update { KPdfOpenDocumentState.Cancelled }
+            }
+        }
+    }
 
     override fun requestSave(
         suggestedFileName: String?,
@@ -486,6 +551,11 @@ internal class DefaultKPdfViewerState(
     fun dispose() {
         close()
         scope.cancel()
+    }
+
+    private fun resetOpenDocumentFlow() {
+        activeOpenDocumentRequest = null
+        _openDocumentState.update { KPdfOpenDocumentState.Idle }
     }
 
     private fun resetSaveFlow() {

@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.StateFlow
      val loadState: StateFlow<KPdfLoadState>
 
      val renderedPage: StateFlow<KPdfRenderedPageState>
+     val openDocumentState: StateFlow<KPdfOpenDocumentState>
+     val openDocumentRequests: Flow<KPdfOpenDocumentRequest>
      val saveState: StateFlow<KPdfSaveState>
      val saveRequests: Flow<KPdfSaveRequest>
 
@@ -53,6 +55,21 @@ import kotlinx.coroutines.flow.StateFlow
      * Closes the active document and releases resources owned by this state.
      */
     public fun close()
+
+    /**
+     * Requests a local-device PDF picker from compose integrations.
+     */
+    public fun requestOpenFromDevice(
+        mimeTypes: List<String> = listOf(KPdfOpenDocumentRequest.PdfMimeType),
+    )
+
+    /**
+     * Receives the platform picker result for the most recent open request.
+     */
+    public fun onOpenFromDeviceResult(
+        requestId: Long,
+        result: KPdfOpenDocumentResult,
+    )
 
     /**
      * Requests that the current PDF be exported and saved through compose

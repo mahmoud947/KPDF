@@ -17,6 +17,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mahmoud.kpdf_compose.KPdfViewer
 import com.mahmoud.kpdf_compose.rememberPdfViewerState
+import com.mahmoud.kpdf_core.api.KPdfOpenDocumentState
 import com.mahmoud.kpdf_core.api.KPdfSaveState
 import com.mahmoud.kpdf_core.api.KPdfSource
 import com.mahmoud.kpdf_core.api.KPdfViewerConfig
@@ -33,6 +34,7 @@ fun App() {
             source = source,
             config = KPdfViewerConfig.builder().preloadPageCount(1).diskCacheSize(50).build()
         )
+        val openDocumentState by kPdfState.openDocumentState.collectAsState()
         val saveState by kPdfState.saveState.collectAsState()
         Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -57,6 +59,13 @@ fun App() {
                     }
                     Button(
                         onClick = {
+                            kPdfState.requestOpenFromDevice()
+                        }
+                    ) {
+                        Text("Open Local")
+                    }
+                    Button(
+                        onClick = {
                             kPdfState.requestSave()
                         }
                     ) {
@@ -69,10 +78,24 @@ fun App() {
                         modifier = Modifier.padding(horizontal = 16.dp),
                     )
                 }
+                openDocumentMessage(openDocumentState)?.let { message ->
+                    Text(
+                        text = message,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
             }
         }
     }
 }
+
+private fun openDocumentMessage(state: KPdfOpenDocumentState): String? =
+    when (state) {
+        KPdfOpenDocumentState.Idle -> null
+        is KPdfOpenDocumentState.AwaitingSelection -> "Choose a PDF to open."
+        KPdfOpenDocumentState.Cancelled -> "Open PDF was cancelled."
+        is KPdfOpenDocumentState.Error -> state.reason.message
+    }
 
 private fun saveMessage(saveState: KPdfSaveState): String? =
     when (saveState) {
