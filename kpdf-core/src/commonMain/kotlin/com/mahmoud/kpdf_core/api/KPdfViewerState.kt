@@ -1,5 +1,6 @@
 package com.mahmoud.kpdf_core.api
 
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -14,6 +15,8 @@ import kotlinx.coroutines.flow.StateFlow
      val loadState: StateFlow<KPdfLoadState>
 
      val renderedPage: StateFlow<KPdfRenderedPageState>
+     val saveState: StateFlow<KPdfSaveState>
+     val saveRequests: Flow<KPdfSaveRequest>
 
     /**
      * Opens [source], cancelling any in-flight open/render work owned by this
@@ -52,6 +55,36 @@ import kotlinx.coroutines.flow.StateFlow
     public fun close()
 
     /**
+     * Requests that the current PDF be exported and saved through compose
+     * platform integrations.
+     */
+    public fun requestSave(
+        suggestedFileName: String? = null,
+        mimeType: String = KPdfSaveRequest.DefaultMimeType,
+    )
+
+    /**
+     * Alias for [requestSave] to keep UI call sites concise.
+     */
+    public fun savePdf(
+        suggestedFileName: String? = null,
+        mimeType: String = KPdfSaveRequest.DefaultMimeType,
+    ) {
+        requestSave(
+            suggestedFileName = suggestedFileName,
+            mimeType = mimeType,
+        )
+    }
+
+    /**
+     * Receives the platform save result for the most recent request.
+     */
+    public fun onSaveResult(
+        requestId: Long,
+        result: KPdfSaveResult,
+    )
+
+    /**
      * Renders [pageIndex] for UI layers without exposing source or platform
      * renderer details.
      */
@@ -61,4 +94,9 @@ import kotlinx.coroutines.flow.StateFlow
         targetHeight: Int,
         zoom: Float = 1f,
     ): Result<KPdfPageBitmap>
+
+    /**
+     * Exports the currently configured PDF source as raw bytes.
+     */
+    public suspend fun exportPdf(): Result<ByteArray>
 }

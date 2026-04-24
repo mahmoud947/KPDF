@@ -12,6 +12,8 @@ import com.mahmoud.kpdf_core.api.KPdfSource
 interface KPdfRepository {
     suspend fun open(source: KPdfSource): Result<KPdfDocumentRef>
 
+    suspend fun export(source: KPdfSource): Result<ByteArray>
+
     suspend fun close(documentId: String)
 
     suspend fun closeAll()

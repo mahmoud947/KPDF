@@ -28,6 +28,8 @@ fun rememberPdfViewerState(
     LaunchedEffect(state, source) {
         state.open(source)
     }
+    BindPdfSaveEffect(state)
+
     DisposableEffect(state) {
         onDispose {
             state.close()

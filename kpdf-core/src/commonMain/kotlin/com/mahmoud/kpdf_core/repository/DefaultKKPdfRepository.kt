@@ -57,6 +57,23 @@ class DefaultKKPdfRepository(
         return Result.success(document)
     }
 
+    override suspend fun export(source: KPdfSource): Result<ByteArray> {
+        val materialized = materialize(source).getOrElse {
+            return kpdfFailure(it, errorMapper)
+        }
+
+        return runCatching {
+            val bytes = fileSystem.readBytes(materialized.path)
+                ?: throw KPdfIoException("Unable to read PDF bytes from source.")
+            bytes
+        }.fold(
+            onSuccess = { Result.success(it) },
+            onFailure = { throwable -> kpdfFailure(throwable, errorMapper) }
+        ).also {
+            cleanup(materialized)
+        }
+    }
+
     override suspend fun close(documentId: String) {
         val record = mutex.withLock {
             openDocuments.remove(documentId)
