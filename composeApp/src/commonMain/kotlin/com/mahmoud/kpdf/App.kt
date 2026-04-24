@@ -30,7 +30,7 @@ fun App() {
         )
         val kPdfState = rememberPdfViewerState(
             source = source,
-            config = KPdfViewerConfig.builder().preloadPageCount(1).build()
+            config = KPdfViewerConfig.builder().preloadPageCount(1).diskCacheSize(50).build()
         )
         Scaffold(
             modifier = Modifier.fillMaxSize(),
