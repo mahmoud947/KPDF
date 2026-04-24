@@ -10,6 +10,7 @@ class KPdfViewerConfig internal constructor(
     val maxZoom: Float,
     val doubleTapZoom: Float,
     val ramCacheSize: Int,
+    val diskCacheSize: Int,
     val preloadPageCount: Int,
 ) {
     /**
@@ -21,6 +22,7 @@ class KPdfViewerConfig internal constructor(
         private var maxZoom: Float = 4f
         private var doubleTapZoom: Float = 2f
         private var ramCacheSize: Int = DefaultRamCacheSize
+        private var diskCacheSize: Int = DefaultDiskCacheSize
         private var preloadPageCount: Int = 0
 
         fun enableZoom(value: Boolean): Builder = apply {
@@ -59,6 +61,17 @@ class KPdfViewerConfig internal constructor(
         }
 
         /**
+         * Sets the max number of rendered pages held on disk for this viewer.
+         *
+         * Use `0` to disable the disk cache.
+         */
+        fun diskCacheSize(value: Int): Builder = apply {
+            require(value >= 0) { "diskCacheSize must be greater than or equal to 0." }
+
+            diskCacheSize = value
+        }
+
+        /**
          * Sets how many nearby pages should be preloaded around the current page.
          *
          * Use `0` to disable background preloading.
@@ -76,6 +89,7 @@ class KPdfViewerConfig internal constructor(
                 maxZoom = maxZoom,
                 doubleTapZoom = doubleTapZoom.coerceIn(minZoom, maxZoom),
                 ramCacheSize = ramCacheSize,
+                diskCacheSize = diskCacheSize,
                 preloadPageCount = preloadPageCount,
             )
         }
@@ -83,6 +97,7 @@ class KPdfViewerConfig internal constructor(
 
     companion object {
         const val DefaultRamCacheSize: Int = 6
+        const val DefaultDiskCacheSize: Int = 24
 
         /**
          * Starts a new [KPdfViewerConfig] builder.

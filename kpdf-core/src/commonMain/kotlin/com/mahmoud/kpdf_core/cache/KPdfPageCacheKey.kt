@@ -6,7 +6,7 @@ package com.mahmoud.kpdf_core.cache
  */
 
 internal data class KPdfPageCacheKey(
-    val documentId: String,
+    val documentKey: String,
     val pageIndex: Int,
     val targetWidth: Int,
     val targetHeight: Int,

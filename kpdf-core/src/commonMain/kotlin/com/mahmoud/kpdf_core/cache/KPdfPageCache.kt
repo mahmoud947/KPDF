@@ -15,7 +15,7 @@ internal interface KPdfPageCache {
         page: KPdfPageBitmap,
     )
 
-    suspend fun removeDocument(documentId: String)
+    suspend fun removeDocument(documentKey: String)
 
     suspend fun clear()
 }

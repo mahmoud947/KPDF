@@ -1,5 +1,6 @@
 package com.mahmoud.kpdf_core.filesystem
 
+import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
@@ -7,6 +8,7 @@ import platform.Foundation.NSData
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSTemporaryDirectory
 import platform.Foundation.create
+import platform.Foundation.dataWithContentsOfFile
 import platform.posix.remove
 
 /*
@@ -20,6 +22,18 @@ actual class KPdfFileSystem {
         return NSTemporaryDirectory().trimEnd('/') + "/" + fileName
     }
 
+    @OptIn(ExperimentalForeignApi::class)
+    actual suspend fun createCacheDirectory(name: String): String {
+        val directoryPath = NSTemporaryDirectory().trimEnd('/') + "/" + name
+        NSFileManager.defaultManager.createDirectoryAtPath(
+            path = directoryPath,
+            withIntermediateDirectories = true,
+            attributes = null,
+            error = null,
+        )
+        return directoryPath
+    }
+
     actual suspend fun writeBytes(path: String, bytes: ByteArray) {
         NSFileManager.defaultManager.createFileAtPath(
             path = path,
@@ -27,6 +41,9 @@ actual class KPdfFileSystem {
             attributes = null,
         )
     }
+
+    actual suspend fun readBytes(path: String): ByteArray? =
+        NSData.dataWithContentsOfFile(path)?.toByteArray()
 
     @OptIn(ExperimentalForeignApi::class)
     actual suspend fun copyFile(sourcePath: String, destinationPath: String) {
@@ -43,7 +60,7 @@ actual class KPdfFileSystem {
         remove(path) == 0
 }
 
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 private fun ByteArray.toNSData(): NSData =
     if (isEmpty()) {
         NSData()
@@ -55,3 +72,18 @@ private fun ByteArray.toNSData(): NSData =
             )
         }
     }
+
+@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
+private fun NSData.toByteArray(): ByteArray {
+    val bytes = ByteArray(length.toInt())
+    if (bytes.isEmpty()) return bytes
+
+    bytes.usePinned { pinned ->
+        platform.posix.memcpy(
+            pinned.addressOf(0),
+            this.bytes,
+            length,
+        )
+    }
+    return bytes
+}

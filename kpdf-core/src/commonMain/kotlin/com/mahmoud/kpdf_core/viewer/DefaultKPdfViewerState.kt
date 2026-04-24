@@ -9,6 +9,7 @@ import com.mahmoud.kpdf_core.api.KPdfRenderedPageState
 import com.mahmoud.kpdf_core.api.KPdfSource
 import com.mahmoud.kpdf_core.api.KPdfViewerConfig
 import com.mahmoud.kpdf_core.api.KPdfViewerState
+import com.mahmoud.kpdf_core.api.cacheKey
 import com.mahmoud.kpdf_core.cache.KPdfMemoryPageCache
 import com.mahmoud.kpdf_core.cache.KPdfPageCache
 import com.mahmoud.kpdf_core.cache.KPdfPageCacheKey
@@ -36,21 +37,22 @@ import kotlinx.coroutines.sync.withLock
  * Copyright (c) 2026 KDF. All rights reserved.
  */
 
-class DefaultKPdfViewerState(
+internal class DefaultKPdfViewerState(
     override var source: KPdfSource,
     override val config: KPdfViewerConfig,
     private val repository: KPdfRepository,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob()),
+    private val pageCache: KPdfPageCache = KPdfMemoryPageCache(config.ramCacheSize),
 ) : KPdfViewerState {
 
     private val _loadState = MutableStateFlow<KPdfLoadState>(KPdfLoadState.Idle)
     private val _renderedPage = MutableStateFlow<KPdfRenderedPageState>(KPdfRenderedPageState.Idle)
     private val _currentPage = MutableStateFlow(0)
-    private val pageCache: KPdfPageCache = KPdfMemoryPageCache(config.ramCacheSize)
     private val inFlightRenderMutex = Mutex()
     private val inFlightRenders = mutableMapOf<KPdfPageCacheKey, Deferred<Result<KPdfPageBitmap>>>()
 
     private var document: KPdfDocumentRef? = null
+    private var documentCacheKey: String? = null
     private var openJob: Job? = null
     private var renderJob: Job? = null
     private var preloadJob: Job? = null
@@ -74,6 +76,7 @@ class DefaultKPdfViewerState(
             repository.open(source).fold(
                 onSuccess = { opened ->
                     document = opened
+                    documentCacheKey = source.cacheKey()
                     _loadState.update {
                         KPdfLoadState.Ready(
                             pageCount = opened.pageCount,
@@ -92,6 +95,7 @@ class DefaultKPdfViewerState(
                     }
                 },
                 onFailure = { throwable ->
+                    documentCacheKey = null
                     val error = throwable.toKPdfError()
                     _loadState.update { KPdfLoadState.Error(error) }
                     _renderedPage.update { KPdfRenderedPageState.Error(error) }
@@ -146,6 +150,10 @@ class DefaultKPdfViewerState(
             ?: return Result.failure(
                 KPdfException(KPdfError.Unknown("No PDF document is open."))
             )
+        val currentDocumentCacheKey = documentCacheKey
+            ?: return Result.failure(
+                KPdfException(KPdfError.Unknown("PDF cache key is unavailable."))
+            )
 
         if (pageIndex !in 0 until currentDocument.pageCount) {
             return Result.failure(
@@ -155,6 +163,7 @@ class DefaultKPdfViewerState(
 
         return renderPageWithCache(
             currentDocument = currentDocument,
+            currentDocumentCacheKey = currentDocumentCacheKey,
             pageIndex = pageIndex,
             targetWidth = targetWidth,
             targetHeight = targetHeight,
@@ -164,6 +173,7 @@ class DefaultKPdfViewerState(
 
     private fun renderCurrentPage(pageIndex: Int) {
         val currentDocument = document ?: return
+        val currentDocumentCacheKey = documentCacheKey ?: return
         if (pageIndex !in 0 until currentDocument.pageCount) return
 
         val generation = ++renderGeneration
@@ -175,6 +185,7 @@ class DefaultKPdfViewerState(
 
             renderPageWithCache(
                 currentDocument = currentDocument,
+                currentDocumentCacheKey = currentDocumentCacheKey,
                 pageIndex = pageIndex,
                 targetWidth = DefaultTargetWidth,
                 targetHeight = DefaultTargetHeight,
@@ -185,6 +196,7 @@ class DefaultKPdfViewerState(
                         _renderedPage.update { KPdfRenderedPageState.Ready(bitmap) }
                         schedulePagePreload(
                             currentDocument = currentDocument,
+                            currentDocumentCacheKey = currentDocumentCacheKey,
                             currentPageIndex = pageIndex,
                             generation = generation,
                         )
@@ -203,6 +215,7 @@ class DefaultKPdfViewerState(
 
     private fun schedulePagePreload(
         currentDocument: KPdfDocumentRef,
+        currentDocumentCacheKey: String,
         currentPageIndex: Int,
         generation: Int,
     ) {
@@ -212,6 +225,7 @@ class DefaultKPdfViewerState(
         preloadJob = scope.launch {
             preloadPagesAround(
                 currentDocument = currentDocument,
+                currentDocumentCacheKey = currentDocumentCacheKey,
                 currentPageIndex = currentPageIndex,
                 generation = generation,
             )
@@ -220,6 +234,7 @@ class DefaultKPdfViewerState(
 
     private suspend fun preloadPagesAround(
         currentDocument: KPdfDocumentRef,
+        currentDocumentCacheKey: String,
         currentPageIndex: Int,
         generation: Int,
     ) {
@@ -234,6 +249,7 @@ class DefaultKPdfViewerState(
 
             renderPageWithCache(
                 currentDocument = currentDocument,
+                currentDocumentCacheKey = currentDocumentCacheKey,
                 pageIndex = pageIndex,
                 targetWidth = DefaultTargetWidth,
                 targetHeight = DefaultTargetHeight,
@@ -244,13 +260,14 @@ class DefaultKPdfViewerState(
 
     private suspend fun renderPageWithCache(
         currentDocument: KPdfDocumentRef,
+        currentDocumentCacheKey: String,
         pageIndex: Int,
         targetWidth: Int,
         targetHeight: Int,
         zoom: Float,
     ): Result<KPdfPageBitmap> {
         val cacheKey = KPdfPageCacheKey(
-            documentId = currentDocument.id,
+            documentKey = currentDocumentCacheKey,
             pageIndex = pageIndex,
             targetWidth = targetWidth,
             targetHeight = targetHeight,
@@ -344,8 +361,10 @@ class DefaultKPdfViewerState(
 
     private suspend fun closeCurrentDocument() {
         val currentDocument = document ?: return
+        val currentDocumentCacheKey = documentCacheKey
         document = null
-        pageCache.removeDocument(currentDocument.id)
+        documentCacheKey = null
+        currentDocumentCacheKey?.let { pageCache.removeDocument(it) }
         repository.close(currentDocument.id)
     }
 

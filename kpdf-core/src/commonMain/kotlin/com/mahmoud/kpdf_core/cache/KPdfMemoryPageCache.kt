@@ -37,10 +37,10 @@ internal class KPdfMemoryPageCache(
         }
     }
 
-    override suspend fun removeDocument(documentId: String) {
+    override suspend fun removeDocument(documentKey: String) {
         mutex.withLock {
             val keysToRemove = entries.keys
-                .filter { it.documentId == documentId }
+                .filter { it.documentKey == documentKey }
 
             keysToRemove.forEach(entries::remove)
         }

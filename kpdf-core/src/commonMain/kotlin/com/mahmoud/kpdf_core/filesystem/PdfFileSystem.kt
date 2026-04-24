@@ -8,9 +8,13 @@ package com.mahmoud.kpdf_core.filesystem
  */
 
 expect class KPdfFileSystem {
-    suspend fun createTempPdfFile(prefix: String = "pdf-sdk"): String
+    suspend fun createTempPdfFile(prefix: String = "kpdf-sdk"): String
+
+    suspend fun createCacheDirectory(name: String = "kpdf-cache"): String
 
     suspend fun writeBytes(path: String, bytes: ByteArray)
+
+    suspend fun readBytes(path: String): ByteArray?
 
     suspend fun copyFile(sourcePath: String, destinationPath: String)
 

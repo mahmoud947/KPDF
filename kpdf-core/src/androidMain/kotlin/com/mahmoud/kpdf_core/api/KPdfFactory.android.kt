@@ -1,6 +1,11 @@
 package com.mahmoud.kpdf_core.api
 
 import com.mahmoud.kpdf_core.DefaultKPdf
+import com.mahmoud.kpdf_core.cache.AndroidKPdfPageBitmapCodec
+import com.mahmoud.kpdf_core.cache.KPdfDiskPageCache
+import com.mahmoud.kpdf_core.cache.KPdfFileSystemDiskCacheStorage
+import com.mahmoud.kpdf_core.cache.KPdfLayeredPageCache
+import com.mahmoud.kpdf_core.cache.KPdfMemoryPageCache
 import com.mahmoud.kpdf_core.filesystem.KPdfFileSystem
 import com.mahmoud.kpdf_core.network.KPdfRemoteDataSource
 import com.mahmoud.kpdf_core.repository.DefaultKKPdfRepository
@@ -24,6 +29,16 @@ actual object KPdfFactory {
                 fileSystem = fileSystem,
                 documentFactory = KPdfDocumentFactory(),
             ),
+            pageCacheFactory = { config ->
+                KPdfLayeredPageCache(
+                    memoryCache = KPdfMemoryPageCache(config.ramCacheSize),
+                    diskCache = KPdfDiskPageCache(
+                        storage = KPdfFileSystemDiskCacheStorage(fileSystem),
+                        bitmapCodec = AndroidKPdfPageBitmapCodec(),
+                        maxEntries = config.diskCacheSize,
+                    ),
+                )
+            },
         )
     }
 }
