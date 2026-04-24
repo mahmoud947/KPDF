@@ -1,10 +1,5 @@
 package com.mahmoud.kpdf_core.api
 
-import com.mahmoud.kpdf_core.utils.fingerprint
-import com.mahmoud.kpdf_core.utils.normalizedBase64
-import kotlin.io.encoding.Base64
-import kotlin.io.encoding.ExperimentalEncodingApi
-
 /*
  * Created by Mahmoud Kamal El-Din on 2026-04-24.
  * Copyright (c) 2026 KDF. All rights reserved.
@@ -23,6 +18,18 @@ import kotlin.io.encoding.ExperimentalEncodingApi
     ) : KPdfSource
 
     /**
+     * Raw PDF bytes already loaded by the caller.
+     */
+    data class Bytes(
+        val data: ByteArray,
+    ) : KPdfSource {
+        override fun equals(other: Any?): Boolean =
+            this === other || other is Bytes && data.contentEquals(other.data)
+
+        override fun hashCode(): Int = data.contentHashCode()
+    }
+
+    /**
      * Inline Base64-encoded PDF content.
      *
      * Supports both raw Base64 strings and data URLs such as
@@ -31,6 +38,4 @@ import kotlin.io.encoding.ExperimentalEncodingApi
     data class Base64(
         val value: String,
     ) : KPdfSource
-
 }
-

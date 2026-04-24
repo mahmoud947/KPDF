@@ -24,5 +24,6 @@ internal fun KPdfSource.cacheKey(): String = when (this) {
         }
     }
 
+    is KPdfSource.Bytes -> "bytes:${data.fingerprint()}"
     is KPdfSource.Base64 -> "base64:${value.normalizedBase64().fingerprint()}"
 }

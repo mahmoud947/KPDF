@@ -14,8 +14,12 @@ internal fun String.normalizedBase64(): String =
         .filterNot(Char::isWhitespace)
 
 internal fun String.fingerprint(): String {
+    return encodeToByteArray().fingerprint()
+}
+
+internal fun ByteArray.fingerprint(): String {
     var hash = 1469598103934665603UL
-    encodeToByteArray().forEach { byte ->
+    forEach { byte ->
         hash = hash xor byte.toUByte().toULong()
         hash *= 1099511628211UL
     }

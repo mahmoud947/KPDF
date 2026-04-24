@@ -26,10 +26,8 @@ import kpdf.composeapp.generated.resources.Res
 @Preview
 fun App() {
     MaterialTheme {
-        val base64 = runBlocking { Res.readBytes("files/base_64_pdf.text").decodeToString() }
-        val source = KPdfSource.Base64(
-           value = base64
-        )
+        val pdf = runBlocking { Res.readBytes("files/sample.pdf") }
+        val source = KPdfSource.Bytes(pdf)
         val kPdfState = rememberPdfViewerState(
             source = source,
             config = KPdfViewerConfig.builder().preloadPageCount(1).diskCacheSize(50).build()
