@@ -2,7 +2,14 @@
 
 This guide shows the recommended integration path for KPDF in a Compose Multiplatform application.
 
-## 1. Add The Modules
+## 1. Add The SDK Modules
+
+Add:
+
+```kotlin
+implementation("com.mahmoud.kpdf:kpdf-core:1.0.3")
+implementation("com.mahmoud.kpdf:kpdf-compose:1.0.3")
+```
 
 Use:
 
@@ -114,6 +121,6 @@ scope.launch {
 }
 ```
 
-## 9. Full Example
+## 9. Read More
 
-See the full SDK walkthrough in [SDK.md](/Users/mahmoudkamal/AndroidStudioProjects/KPDF/docs/SDK.md:1).
+For the full usage guide and advanced customization examples, see [SDK.md](/Users/mahmoudkamal/AndroidStudioProjects/KPDF/docs/SDK.md:1).

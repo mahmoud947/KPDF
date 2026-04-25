@@ -1,8 +1,8 @@
-# KPDF SDK Documentation
+# KPDF SDK Guide
 
 KPDF is a Kotlin Multiplatform PDF SDK for Android and iOS with a Compose Multiplatform viewer layer.
 
-This document focuses on the public SDK surface and how to use it in real applications.
+This document focuses on how to integrate and use the SDK in real applications.
 
 ## Modules
 
@@ -13,7 +13,7 @@ This document focuses on the public SDK surface and how to use it in real applic
 - `composeApp`
   Sample application that demonstrates how the SDK is intended to be used.
 
-## Main Concepts
+## What You Use Most
 
 - `KPdfSource`
   Describes where the PDF comes from.
@@ -49,7 +49,7 @@ val bytesSource = KPdfSource.Bytes(pdfBytes)
 val base64Source = KPdfSource.Base64(base64String)
 ```
 
-## Creating Viewer State
+## 1. Create Viewer State
 
 In Compose, the easiest entry point is `rememberPdfViewerState`.
 
@@ -81,7 +81,7 @@ val viewerState = sdk.viewerState(
 )
 ```
 
-## KPdfViewerConfig
+## 2. Configure The Viewer
 
 `KPdfViewerConfig` controls runtime behavior for a viewer instance.
 
@@ -107,7 +107,7 @@ val config = KPdfViewerConfig.builder()
     .build()
 ```
 
-## KPdfViewerState
+## 3. Control The Viewer
 
 `KPdfViewerState` is the shared state holder for one PDF viewer instance.
 
@@ -172,7 +172,7 @@ Button(onClick = { viewerState.resetZoom() }) {
 }
 ```
 
-## Main Viewer
+## 4. Render The Main Viewer
 
 Use `KPdfViewer` to display the current page.
 
@@ -185,7 +185,7 @@ KPdfViewer(
 
 `KPdfViewer` reads the active page and zoom state from `KPdfViewerState`.
 
-## Connected Secondary Views
+## 5. Add Connected Views
 
 KPDF supports additional views that are independent in UI behavior but connected through the same `KPdfViewerState`.
 
@@ -243,7 +243,7 @@ KPdfViewerToolbar(
 )
 ```
 
-## Fully Configurable Toolbar
+## 6. Customize The Toolbar
 
 The toolbar is built around configuration objects so applications can replace strings, icons, visibility, and visual style from outside.
 
@@ -295,7 +295,7 @@ KPdfViewerToolbar(
 )
 ```
 
-## Open From Device Flow
+## 7. Open A PDF From Device
 
 The save/open platform effects are already bound internally by `rememberPdfViewerState`, so applications usually only need to observe the state and react to success.
 
@@ -314,7 +314,7 @@ Button(onClick = { viewerState.requestOpenFromDevice() }) {
 }
 ```
 
-## Save Flow
+## 8. Save The Current PDF
 
 ```kotlin
 val saveState by viewerState.saveState.collectAsState()
@@ -333,7 +333,7 @@ when (saveState) {
 }
 ```
 
-## Share Flow
+## 9. Share The Current PDF
 
 KPDF does not force a platform sharing UI. Instead, the app can export the PDF bytes and pass them into its own Android/iOS share flow.
 
@@ -358,7 +358,7 @@ Button(
 }
 ```
 
-## Full Screen Example
+## 10. Full Integration Example
 
 ```kotlin
 @Composable
@@ -413,7 +413,7 @@ fun FullPdfScreen(source: KPdfSource) {
 }
 ```
 
-## Notes And Best Practices
+## Best Practices
 
 - Use one `KPdfViewerState` per visible viewer instance.
 - Reuse the same state across connected views like the main viewer, toolbar, and thumbnail strip.
@@ -422,16 +422,6 @@ fun FullPdfScreen(source: KPdfSource) {
 - Use `requestSave()` when you want the SDK-integrated save/export path.
 - Prefer `rememberPdfViewerState` in Compose unless you have a strong reason to manage lifecycle yourself.
 
-## Verification
+## Notes
 
-The SDK documentation in this repository matches the current public implementation verified with:
-
-```bash
-./gradlew \
-  :kpdf-core:compileCommonMainKotlinMetadata \
-  :kpdf-core:compileAndroidMain \
-  :kpdf-compose:compileCommonMainKotlinMetadata \
-  :kpdf-compose:compileAndroidMain \
-  :kpdf-compose:compileKotlinIosSimulatorArm64 \
-  :composeApp:compileDebugSources
-```
+The examples in this document match the current public implementation in this repository.

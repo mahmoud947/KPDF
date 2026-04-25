@@ -8,6 +8,15 @@ KPDF is a Kotlin Multiplatform PDF library for Android and iOS with a Compose Mu
 - `kpdf-compose`: Compose viewer and platform integrations for save/open flows
 - `composeApp`: sample app used to exercise the library
 
+## Installation
+
+Add the SDK modules to your Gradle dependencies:
+
+```kotlin
+implementation("com.mahmoud.kpdf:kpdf-core:1.0.3")
+implementation("com.mahmoud.kpdf:kpdf-compose:1.0.3")
+```
+
 ## Current Features
 
 - URL, Base64, bytes, and resource-backed PDF sources
@@ -97,13 +106,6 @@ Button(onClick = { viewerState.requestSave() }) {
 
 - SDK guide: [docs/SDK.md](/Users/mahmoudkamal/AndroidStudioProjects/KPDF/docs/SDK.md:1)
 - Integration guide: [docs/INTEGRATION.md](/Users/mahmoudkamal/AndroidStudioProjects/KPDF/docs/INTEGRATION.md:1)
-- Deployment guide: [docs/DEPLOYMENT.md](/Users/mahmoudkamal/AndroidStudioProjects/KPDF/docs/DEPLOYMENT.md:1)
-
-## Prepare For Publishing
-
-Publishing infrastructure is included for `kpdf-core` and `kpdf-compose`.
-
-Before publishing externally, replace the placeholder metadata in [gradle.properties](/Users/mahmoudkamal/AndroidStudioProjects/KPDF/gradle.properties:1), then follow [docs/DEPLOYMENT.md](/Users/mahmoudkamal/AndroidStudioProjects/KPDF/docs/DEPLOYMENT.md:1).
 
 ## Verification
 
