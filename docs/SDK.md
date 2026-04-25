@@ -7,7 +7,7 @@ This document focuses on how to integrate and use the SDK in real applications.
 ## Modules
 
 - `kpdf-core`
-  Shared PDF source loading, rendering, caching, navigation, zoom, save/export, and picker state APIs.
+  Shared PDF source loading, rendering, caching, navigation, zoom, save/export, external-open, and picker state APIs.
 - `kpdf-compose`
   Compose Multiplatform UI components and platform integration for save/open flows.
 - `composeApp`
@@ -136,6 +136,8 @@ val config = KPdfViewerConfig.builder()
 - `requestOpenFromDevice()`
 - `requestSave()`
 - `savePdf()`
+- `requestOpenInExternalApp()`
+- `openInExternalApp()`
 - `renderPage(...)`
 - `exportPdf()`
 - `close()`
@@ -333,7 +335,44 @@ when (saveState) {
 }
 ```
 
-## 9. Share The Current PDF
+## 9. Open The Current PDF In An External App
+
+Use `openInExternalApp()` when you want the SDK to hand the current PDF to any installed app that can open PDFs.
+
+```kotlin
+Button(onClick = { viewerState.openInExternalApp() }) {
+    Text("Open In External App")
+}
+```
+
+You can also pass a suggested file name:
+
+```kotlin
+viewerState.requestOpenInExternalApp(
+    suggestedFileName = "invoice.pdf"
+)
+```
+
+Observe the state if you want to react to success or failure:
+
+```kotlin
+val externalOpenState by viewerState.externalOpenState.collectAsState()
+```
+
+Typical usage:
+
+```kotlin
+when (externalOpenState) {
+    KPdfExternalOpenState.Idle -> Unit
+    KPdfExternalOpenState.Exporting -> Text("Preparing PDF...")
+    is KPdfExternalOpenState.AwaitingExternalApp -> Text("Opening external app...")
+    is KPdfExternalOpenState.Success -> Text("External app opened.")
+    is KPdfExternalOpenState.Cancelled -> Text("Open was cancelled.")
+    is KPdfExternalOpenState.Error -> Text("Unable to open external app.")
+}
+```
+
+## 10. Share The Current PDF
 
 KPDF does not force a platform sharing UI. Instead, the app can export the PDF bytes and pass them into its own Android/iOS share flow.
 
@@ -358,7 +397,7 @@ Button(
 }
 ```
 
-## 10. Full Integration Example
+## 11. Full Integration Example
 
 ```kotlin
 @Composable
@@ -418,6 +457,7 @@ fun FullPdfScreen(source: KPdfSource) {
 - Use one `KPdfViewerState` per visible viewer instance.
 - Reuse the same state across connected views like the main viewer, toolbar, and thumbnail strip.
 - Use `KPdfThumbnailStrip` for page overview navigation instead of rendering full pages in a secondary surface.
+- Use `openInExternalApp()` when you want the SDK to launch an installed PDF viewer app.
 - Use `exportPdf()` for app-managed share flows.
 - Use `requestSave()` when you want the SDK-integrated save/export path.
 - Prefer `rememberPdfViewerState` in Compose unless you have a strong reason to manage lifecycle yourself.

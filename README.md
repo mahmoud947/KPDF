@@ -26,6 +26,7 @@ implementation("com.mahmoud.kpdf:kpdf-compose:1.0.3")
 - configurable page preloading
 - shared zoom state
 - save/export flow from `KPdfViewerState`
+- open-in-external-app flow from `KPdfViewerState`
 - open-from-device flow from `KPdfViewerState`
 - connected toolbar view
 - connected thumbnail strip view
@@ -99,6 +100,14 @@ Button(onClick = { viewerState.requestOpenFromDevice() }) {
 ```kotlin
 Button(onClick = { viewerState.requestSave() }) {
     Text("Save")
+}
+```
+
+## Open In External PDF Viewer
+
+```kotlin
+Button(onClick = { viewerState.openInExternalApp() }) {
+    Text("Open In External App")
 }
 ```
 

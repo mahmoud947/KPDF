@@ -107,7 +107,27 @@ Observe save progress:
 val saveState by viewerState.saveState.collectAsState()
 ```
 
-## 8. Handle Share
+## 8. Open In External PDF Viewer
+
+```kotlin
+viewerState.openInExternalApp()
+```
+
+With a custom file name:
+
+```kotlin
+viewerState.requestOpenInExternalApp(
+    suggestedFileName = "report.pdf"
+)
+```
+
+Observe the state:
+
+```kotlin
+val externalOpenState by viewerState.externalOpenState.collectAsState()
+```
+
+## 9. Handle Share
 
 Use `exportPdf()` and route the bytes into your own platform share flow:
 
@@ -121,6 +141,6 @@ scope.launch {
 }
 ```
 
-## 9. Read More
+## 10. Read More
 
 For the full usage guide and advanced customization examples, see [SDK.md](/Users/mahmoudkamal/AndroidStudioProjects/KPDF/docs/SDK.md:1).
