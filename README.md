@@ -123,8 +123,8 @@ Button(onClick = { viewerState.openInExternalApp() }) {
 
 ## Documentation
 
-- SDK guide: [docs/SDK.md](/Users/mahmoudkamal/AndroidStudioProjects/KPDF/docs/SDK.md:1)
-- Integration guide: [docs/INTEGRATION.md](/Users/mahmoudkamal/AndroidStudioProjects/KPDF/docs/INTEGRATION.md:1)
+- SDK guide: [docs/SDK.md](docs/SDK.md)
+- Integration guide: [docs/INTEGRATION.md](docs/INTEGRATION.md)
 
 ## Verification
 
