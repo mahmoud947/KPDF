@@ -15,8 +15,11 @@ KPDF is a Kotlin Multiplatform PDF library for Android and iOS with a Compose Mu
 - disk page cache
 - remote source persistence for offline reopen
 - configurable page preloading
+- shared zoom state
 - save/export flow from `KPdfViewerState`
 - open-from-device flow from `KPdfViewerState`
+- connected toolbar view
+- connected thumbnail strip view
 - Android and iOS Compose support
 
 ## Quick Start
@@ -34,6 +37,32 @@ fun PdfScreen(source: KPdfSource) {
     )
 
     KPdfViewer(state = viewerState)
+}
+```
+
+## Connected Views
+
+KPDF also exposes optional connected views that share the same `KPdfViewerState`.
+
+```kotlin
+var thumbnailsVisible by remember { mutableStateOf(true) }
+
+KPdfViewerToolbar(
+    state = viewerState,
+    isThumbnailStripVisible = thumbnailsVisible,
+    onThumbnailToggle = { thumbnailsVisible = it },
+    onShareClick = { /* custom share flow */ },
+)
+
+KPdfViewer(state = viewerState)
+
+if (thumbnailsVisible) {
+    KPdfThumbnailStrip(
+        state = viewerState,
+        onPageClick = { pageIndex ->
+            viewerState.goToPage(pageIndex)
+        },
+    )
 }
 ```
 
@@ -66,14 +95,15 @@ Button(onClick = { viewerState.requestSave() }) {
 
 ## Documentation
 
-- Integration guide: [docs/INTEGRATION.md](/Users/mahmoud.kkamal/AndroidStudioProjects/KPDF/docs/INTEGRATION.md:1)
-- Deployment guide: [docs/DEPLOYMENT.md](/Users/mahmoud.kkamal/AndroidStudioProjects/KPDF/docs/DEPLOYMENT.md:1)
+- SDK guide: [docs/SDK.md](/Users/mahmoudkamal/AndroidStudioProjects/KPDF/docs/SDK.md:1)
+- Integration guide: [docs/INTEGRATION.md](/Users/mahmoudkamal/AndroidStudioProjects/KPDF/docs/INTEGRATION.md:1)
+- Deployment guide: [docs/DEPLOYMENT.md](/Users/mahmoudkamal/AndroidStudioProjects/KPDF/docs/DEPLOYMENT.md:1)
 
 ## Prepare For Publishing
 
 Publishing infrastructure is included for `kpdf-core` and `kpdf-compose`.
 
-Before publishing externally, replace the placeholder metadata in [gradle.properties](/Users/mahmoud.kkamal/AndroidStudioProjects/KPDF/gradle.properties:1), then follow [docs/DEPLOYMENT.md](/Users/mahmoud.kkamal/AndroidStudioProjects/KPDF/docs/DEPLOYMENT.md:1).
+Before publishing externally, replace the placeholder metadata in [gradle.properties](/Users/mahmoudkamal/AndroidStudioProjects/KPDF/gradle.properties:1), then follow [docs/DEPLOYMENT.md](/Users/mahmoudkamal/AndroidStudioProjects/KPDF/docs/DEPLOYMENT.md:1).
 
 ## Verification
 
