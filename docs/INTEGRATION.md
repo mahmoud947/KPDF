@@ -7,8 +7,8 @@ This guide shows the recommended integration path for KPDF in a Compose Multipla
 Add:
 
 ```kotlin
-implementation("com.mahmoud.kpdf:kpdf-core:1.0.3")
-implementation("com.mahmoud.kpdf:kpdf-compose:1.0.3")
+implementation("com.mahmoud.kpdf:kpdf-core:$version")
+implementation("com.mahmoud.kpdf:kpdf-compose:$version")
 ```
 
 Use:
