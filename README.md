@@ -13,8 +13,8 @@ KPDF is a Kotlin Multiplatform PDF library for Android and iOS with a Compose Mu
 Add the SDK modules to your Gradle dependencies:
 
 ```kotlin
-implementation("com.mahmoud.kpdf:kpdf-core:1.0.3")
-implementation("com.mahmoud.kpdf:kpdf-compose:1.0.3")
+implementation("com.mahmoud.kpdf:kpdf-core:$version")
+implementation("com.mahmoud.kpdf:kpdf-compose:$version")
 ```
 
 ## Current Features
