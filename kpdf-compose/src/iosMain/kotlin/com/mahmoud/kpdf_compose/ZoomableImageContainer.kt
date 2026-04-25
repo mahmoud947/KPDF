@@ -13,10 +13,14 @@ import platform.UIKit.UIImage
 import platform.UIKit.UIImageView
 import platform.UIKit.UIScrollView
 import platform.UIKit.UIScrollViewDelegateProtocol
+import platform.UIKit.UISwipeGestureRecognizer
+import platform.UIKit.UISwipeGestureRecognizerDirectionLeft
+import platform.UIKit.UISwipeGestureRecognizerDirectionRight
 import platform.UIKit.UITapGestureRecognizer
 import platform.UIKit.UIView
 import platform.UIKit.UIViewContentMode.UIViewContentModeScaleAspectFit
 import platform.darwin.NSObject
+import kotlin.math.abs
 
 /*
  * Created by Mahmoud Kamal El-Din on 23/04/2026.
@@ -28,9 +32,12 @@ class ZoomableImageContainer(
     frame: CValue<CGRect>,
     private val minZoom: Double = 1.0,
     private val maxZoom: Double = 4.0,
-    private val doubleTapZoom: Double = 2.0
+    private val doubleTapZoom: Double = 2.0,
+    private val swipeEnabled: Boolean = true,
 ) : UIView(frame) {
     var onZoomChanged: ((Double) -> Unit)? = null
+    var onSwipeNext: (() -> Unit)? = null
+    var onSwipePrevious: (() -> Unit)? = null
 
     private var lastImage: UIImage? = null
 
@@ -73,6 +80,25 @@ class ZoomableImageContainer(
         }
 
         scrollView.addGestureRecognizer(doubleTap)
+
+        if (swipeEnabled) {
+            scrollView.addGestureRecognizer(
+                UISwipeGestureRecognizer(
+                    target = this,
+                    action = NSSelectorFromString("handleSwipeNext:")
+                ).apply {
+                    direction = UISwipeGestureRecognizerDirectionLeft
+                }
+            )
+            scrollView.addGestureRecognizer(
+                UISwipeGestureRecognizer(
+                    target = this,
+                    action = NSSelectorFromString("handleSwipePrevious:")
+                ).apply {
+                    direction = UISwipeGestureRecognizerDirectionRight
+                }
+            )
+        }
     }
 
     override fun layoutSubviews() {
@@ -125,6 +151,18 @@ class ZoomableImageContainer(
         scrollView.zoomToRect(zoomRect, animated = true)
     }
 
+    @ObjCAction
+    fun handleSwipeNext(recognizer: UISwipeGestureRecognizer) {
+        if (!canSwipe()) return
+        onSwipeNext?.invoke()
+    }
+
+    @ObjCAction
+    fun handleSwipePrevious(recognizer: UISwipeGestureRecognizer) {
+        if (!canSwipe()) return
+        onSwipePrevious?.invoke()
+    }
+
     private fun zoomRectForScale(
         scale: Double,
         center: CValue<CGPoint>
@@ -167,4 +205,7 @@ class ZoomableImageContainer(
             }
         }
     }
+
+    private fun canSwipe(): Boolean =
+        swipeEnabled && abs(scrollView.zoomScale - minZoom) < 0.01
 }

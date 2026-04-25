@@ -33,6 +33,7 @@ Other supported options:
 val viewerState = rememberPdfViewerState(
     source = source,
     config = KPdfViewerConfig.builder()
+        .enableSwipe(true)
         .preloadPageCount(1)
         .diskCacheSize(50)
         .build(),

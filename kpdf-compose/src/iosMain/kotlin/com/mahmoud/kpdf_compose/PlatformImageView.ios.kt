@@ -61,10 +61,17 @@ internal actual fun KPlatformImageView(
                 frame = CGRectZero.readValue(),
                 minZoom = config.minZoom.toDouble(),
                 maxZoom = config.maxZoom.toDouble(),
-                doubleTapZoom = config.doubleTapZoom.toDouble()
+                doubleTapZoom = config.doubleTapZoom.toDouble(),
+                swipeEnabled = config.enableSwipe,
             ).apply {
                 onZoomChanged = { zoom ->
                     state.setZoom(zoom.toFloat())
+                }
+                onSwipeNext = {
+                    state.nextPage()
+                }
+                onSwipePrevious = {
+                    state.previousPage()
                 }
             }
         },

@@ -6,6 +6,7 @@ package com.mahmoud.kpdf_core.api
  */
 class KPdfViewerConfig internal constructor(
     val enableZoom: Boolean,
+    val enableSwipe: Boolean,
     val minZoom: Float,
     val maxZoom: Float,
     val doubleTapZoom: Float,
@@ -18,6 +19,7 @@ class KPdfViewerConfig internal constructor(
      */
     class Builder {
         private var enableZoom: Boolean = true
+        private var enableSwipe: Boolean = true
         private var minZoom: Float = 1f
         private var maxZoom: Float = 4f
         private var doubleTapZoom: Float = 2f
@@ -27,6 +29,13 @@ class KPdfViewerConfig internal constructor(
 
         fun enableZoom(value: Boolean): Builder = apply {
             enableZoom = value
+        }
+
+        /**
+         * Enables page navigation by horizontal swipe when the viewer is at its base zoom.
+         */
+        fun enableSwipe(value: Boolean): Builder = apply {
+            enableSwipe = value
         }
 
         /**
@@ -85,6 +94,7 @@ class KPdfViewerConfig internal constructor(
         fun build(): KPdfViewerConfig {
             return KPdfViewerConfig(
                 enableZoom = enableZoom,
+                enableSwipe = enableSwipe,
                 minZoom = minZoom,
                 maxZoom = maxZoom,
                 doubleTapZoom = doubleTapZoom.coerceIn(minZoom, maxZoom),

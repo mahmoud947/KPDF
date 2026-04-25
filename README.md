@@ -40,6 +40,7 @@ fun PdfScreen(source: KPdfSource) {
     val viewerState = rememberPdfViewerState(
         source = source,
         config = KPdfViewerConfig.builder()
+            .enableSwipe(true)
             .ramCacheSize(6)
             .diskCacheSize(24)
             .preloadPageCount(2)

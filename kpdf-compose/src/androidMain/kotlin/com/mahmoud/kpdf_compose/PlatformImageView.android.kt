@@ -2,6 +2,8 @@ package com.mahmoud.kpdf_compose
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Box
@@ -24,11 +26,13 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.foundation.gestures.Orientation
 import com.mahmoud.kpdf_core.api.KPdfPageBitmap
 import com.mahmoud.kpdf_core.api.KPdfViewerConfig
 import com.mahmoud.kpdf_core.api.KPdfViewerState
 import kotlinx.coroutines.delay
 import kotlin.math.floor
+import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
@@ -82,6 +86,38 @@ internal actual fun KPlatformImageView(
         } else {
             Offset.Zero
         }
+    }
+
+    var swipeDragDistance by remember(page.pageIndex) { mutableStateOf(0f) }
+    val swipeAllowed = config.enableSwipe &&
+        (!config.enableZoom || scale <= config.minZoom + SwipeZoomTolerance)
+
+    val swipeModifier = if (config.enableSwipe) {
+        Modifier.draggable(
+            orientation = Orientation.Horizontal,
+            enabled = swipeAllowed,
+            state = rememberDraggableState { delta ->
+                swipeDragDistance += delta
+            },
+            onDragStarted = {
+                swipeDragDistance = 0f
+            },
+            onDragStopped = {
+                when {
+                    swipeDragDistance <= -SwipeDistanceThresholdPx -> {
+                        state.nextPage()
+                    }
+
+                    swipeDragDistance >= SwipeDistanceThresholdPx -> {
+                        state.previousPage()
+                    }
+                }
+
+                swipeDragDistance = 0f
+            },
+        )
+    } else {
+        Modifier
     }
 
     val gestureModifier = if (config.enableZoom) {
@@ -162,7 +198,8 @@ internal actual fun KPlatformImageView(
                 viewportSize = size
                 offset = clampOffset(offset)
             }
-            .then(gestureModifier),
+            .then(gestureModifier)
+            .then(swipeModifier),
         contentAlignment = Alignment.Center,
     ) {
         Image(
@@ -244,3 +281,5 @@ private fun quantizeRenderScale(scale: Float): Float {
 private const val RenderUpgradeDelayMillis = 120L
 private const val RenderScaleStep = 0.5f
 private const val MaxRenderPixels: Long = 8_388_608L
+private const val SwipeDistanceThresholdPx = 72f
+private const val SwipeZoomTolerance = 0.01f

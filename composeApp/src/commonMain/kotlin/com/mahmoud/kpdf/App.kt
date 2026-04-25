@@ -33,7 +33,7 @@ fun App() {
         val source = KPdfSource.Url("https://exeterchessclub.org.uk/chessx/pdf/TacticsCourse.pdf")
         val kPdfState = rememberPdfViewerState(
             source = source,
-            config = KPdfViewerConfig.builder().preloadPageCount(1).diskCacheSize(50).build()
+            config = KPdfViewerConfig.builder().preloadPageCount(1).diskCacheSize(50).enableSwipe(true).build()
         )
         val scope = rememberCoroutineScope()
         var isThumbnailStripVisible by remember { mutableStateOf(true) }

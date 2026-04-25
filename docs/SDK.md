@@ -88,6 +88,7 @@ val viewerState = sdk.viewerState(
 Available builder options:
 
 - `enableZoom(Boolean)`
+- `enableSwipe(Boolean)`
 - `zoomRange(minZoom, maxZoom)`
 - `doubleTapZoom(value)`
 - `ramCacheSize(value)`
@@ -99,6 +100,7 @@ Example:
 ```kotlin
 val config = KPdfViewerConfig.builder()
     .enableZoom(true)
+    .enableSwipe(true)
     .zoomRange(minZoom = 1f, maxZoom = 4f)
     .doubleTapZoom(2.5f)
     .ramCacheSize(8)
