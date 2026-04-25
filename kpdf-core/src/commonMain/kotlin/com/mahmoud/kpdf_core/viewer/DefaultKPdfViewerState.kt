@@ -2,6 +2,9 @@ package com.mahmoud.kpdf_core.viewer
 
 import com.mahmoud.kpdf_core.api.KPdfDocumentRef
 import com.mahmoud.kpdf_core.api.KPdfError
+import com.mahmoud.kpdf_core.api.KPdfExternalOpenRequest
+import com.mahmoud.kpdf_core.api.KPdfExternalOpenResult
+import com.mahmoud.kpdf_core.api.KPdfExternalOpenState
 import com.mahmoud.kpdf_core.api.KPdfException
 import com.mahmoud.kpdf_core.api.KPdfLoadState
 import com.mahmoud.kpdf_core.api.KPdfOpenDocumentRequest
@@ -67,6 +70,11 @@ internal class DefaultKPdfViewerState(
         extraBufferCapacity = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST,
     )
+    private val _externalOpenState = MutableStateFlow<KPdfExternalOpenState>(KPdfExternalOpenState.Idle)
+    private val _externalOpenRequests = MutableSharedFlow<KPdfExternalOpenRequest>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
     private val _currentPage = MutableStateFlow(0)
     private val _currentZoom = MutableStateFlow(config.minZoom)
     private val inFlightRenderMutex = Mutex()
@@ -78,11 +86,14 @@ internal class DefaultKPdfViewerState(
     private var renderJob: Job? = null
     private var preloadJob: Job? = null
     private var saveJob: Job? = null
+    private var externalOpenJob: Job? = null
     private var renderGeneration = 0
     private var nextOpenDocumentRequestId = 0L
     private var nextSaveRequestId = 0L
+    private var nextExternalOpenRequestId = 0L
     private var activeOpenDocumentRequest: KPdfOpenDocumentRequest? = null
     private var activeSaveRequest: KPdfSaveRequest? = null
+    private var activeExternalOpenRequest: KPdfExternalOpenRequest? = null
 
     override val loadState: StateFlow<KPdfLoadState> = _loadState
     override val currentPageIndex: StateFlow<Int> = _currentPage
@@ -92,6 +103,8 @@ internal class DefaultKPdfViewerState(
     override val openDocumentRequests: Flow<KPdfOpenDocumentRequest> = _openDocumentRequests.asSharedFlow()
     override val saveState: StateFlow<KPdfSaveState> = _saveState
     override val saveRequests: Flow<KPdfSaveRequest> = _saveRequests.asSharedFlow()
+    override val externalOpenState: StateFlow<KPdfExternalOpenState> = _externalOpenState
+    override val externalOpenRequests: Flow<KPdfExternalOpenRequest> = _externalOpenRequests.asSharedFlow()
 
     override fun open(source: KPdfSource) {
         this.source = source
@@ -100,6 +113,7 @@ internal class DefaultKPdfViewerState(
         preloadJob?.cancel()
         resetOpenDocumentFlow()
         resetSaveFlow()
+        resetExternalOpenFlow()
 
         openJob = scope.launch {
             closeCurrentDocument()
@@ -190,6 +204,7 @@ internal class DefaultKPdfViewerState(
         preloadJob?.cancel()
         resetOpenDocumentFlow()
         resetSaveFlow()
+        resetExternalOpenFlow()
 
         scope.launch {
             closeCurrentDocument()
@@ -370,6 +385,99 @@ internal class DefaultKPdfViewerState(
 
                 KPdfSaveResult.Cancelled -> {
                     KPdfSaveState.Cancelled(
+                        requestId = request.requestId,
+                        suggestedFileName = request.suggestedFileName,
+                        mimeType = request.mimeType,
+                    )
+                }
+            }
+        }
+    }
+
+    override fun requestOpenInExternalApp(
+        suggestedFileName: String?,
+        mimeType: String,
+    ) {
+        if (_externalOpenState.value is KPdfExternalOpenState.Exporting || activeExternalOpenRequest != null) {
+            return
+        }
+
+        val normalizedMimeType = mimeType.ifBlank { KPdfExternalOpenRequest.DefaultMimeType }
+        val resolvedFileName = resolveSuggestedFileName(
+            suggestedFileName = suggestedFileName,
+            mimeType = normalizedMimeType,
+        )
+        val requestId = ++nextExternalOpenRequestId
+
+        externalOpenJob?.cancel()
+        externalOpenJob = scope.launch {
+            _externalOpenState.update { KPdfExternalOpenState.Exporting }
+
+            try {
+                exportPdf().fold(
+                    onSuccess = { bytes ->
+                        val request = KPdfExternalOpenRequest(
+                            requestId = requestId,
+                            suggestedFileName = resolvedFileName,
+                            mimeType = normalizedMimeType,
+                            bytes = bytes,
+                        )
+                        activeExternalOpenRequest = request
+                        _externalOpenState.update {
+                            KPdfExternalOpenState.AwaitingExternalApp(
+                                requestId = request.requestId,
+                                suggestedFileName = request.suggestedFileName,
+                                mimeType = request.mimeType,
+                            )
+                        }
+                        _externalOpenRequests.emit(request)
+                    },
+                    onFailure = { throwable ->
+                        _externalOpenState.update {
+                            KPdfExternalOpenState.Error(
+                                reason = throwable.toKPdfError(),
+                                suggestedFileName = resolvedFileName,
+                                mimeType = normalizedMimeType,
+                            )
+                        }
+                    },
+                )
+            } catch (_: CancellationException) {
+                _externalOpenState.update { KPdfExternalOpenState.Idle }
+            }
+        }
+    }
+
+    override fun onExternalOpenResult(
+        requestId: Long,
+        result: KPdfExternalOpenResult,
+    ) {
+        val request = activeExternalOpenRequest
+            ?.takeIf { it.requestId == requestId }
+            ?: return
+
+        activeExternalOpenRequest = null
+        _externalOpenState.update {
+            when (result) {
+                is KPdfExternalOpenResult.Success -> {
+                    KPdfExternalOpenState.Success(
+                        requestId = request.requestId,
+                        suggestedFileName = request.suggestedFileName,
+                        mimeType = request.mimeType,
+                        location = result.location,
+                    )
+                }
+
+                is KPdfExternalOpenResult.Failure -> {
+                    KPdfExternalOpenState.Error(
+                        reason = result.reason,
+                        suggestedFileName = request.suggestedFileName,
+                        mimeType = request.mimeType,
+                    )
+                }
+
+                KPdfExternalOpenResult.Cancelled -> {
+                    KPdfExternalOpenState.Cancelled(
                         requestId = request.requestId,
                         suggestedFileName = request.suggestedFileName,
                         mimeType = request.mimeType,
@@ -591,6 +699,13 @@ internal class DefaultKPdfViewerState(
         saveJob = null
         activeSaveRequest = null
         _saveState.update { KPdfSaveState.Idle }
+    }
+
+    private fun resetExternalOpenFlow() {
+        externalOpenJob?.cancel()
+        externalOpenJob = null
+        activeExternalOpenRequest = null
+        _externalOpenState.update { KPdfExternalOpenState.Idle }
     }
 
     private fun resolveSuggestedFileName(

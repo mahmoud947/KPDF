@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.StateFlow
      val openDocumentRequests: Flow<KPdfOpenDocumentRequest>
      val saveState: StateFlow<KPdfSaveState>
      val saveRequests: Flow<KPdfSaveRequest>
+     val externalOpenState: StateFlow<KPdfExternalOpenState>
+     val externalOpenRequests: Flow<KPdfExternalOpenRequest>
 
     /**
      * Opens [source], cancelling any in-flight open/render work owned by this
@@ -121,6 +123,36 @@ import kotlinx.coroutines.flow.StateFlow
     public fun onSaveResult(
         requestId: Long,
         result: KPdfSaveResult,
+    )
+
+    /**
+     * Requests that the current PDF be opened in an external app capable of
+     * handling PDF content.
+     */
+    public fun requestOpenInExternalApp(
+        suggestedFileName: String? = null,
+        mimeType: String = KPdfExternalOpenRequest.DefaultMimeType,
+    )
+
+    /**
+     * Alias for [requestOpenInExternalApp] to keep UI call sites concise.
+     */
+    public fun openInExternalApp(
+        suggestedFileName: String? = null,
+        mimeType: String = KPdfExternalOpenRequest.DefaultMimeType,
+    ) {
+        requestOpenInExternalApp(
+            suggestedFileName = suggestedFileName,
+            mimeType = mimeType,
+        )
+    }
+
+    /**
+     * Receives the external-open result for the most recent request.
+     */
+    public fun onExternalOpenResult(
+        requestId: Long,
+        result: KPdfExternalOpenResult,
     )
 
     /**

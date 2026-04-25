@@ -17,6 +17,9 @@ kotlin {
         namespace = "com.mahmoud.kpdf_compose"
         compileSdk = 36
         minSdk = 24
+        androidResources {
+            enable = true
+        }
 
         withHostTestBuilder {
         }

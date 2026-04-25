@@ -103,6 +103,14 @@ fun App() {
                     ) {
                         Text("Open Local")
                     }
+
+                    Button(
+                        onClick = {
+                            kPdfState.requestOpenInExternalApp()
+                        }
+                    ) {
+                        Text("Open On External app")
+                    }
                     Button(
                         onClick = {
                             kPdfState.requestSave()

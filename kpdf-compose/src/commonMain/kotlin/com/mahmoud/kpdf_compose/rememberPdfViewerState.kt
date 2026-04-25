@@ -30,6 +30,7 @@ fun rememberPdfViewerState(
     }
     BindPdfOpenEffect(state)
     BindPdfSaveEffect(state)
+    BindPdfExternalOpenEffect(state)
 
     DisposableEffect(state) {
         onDispose {
