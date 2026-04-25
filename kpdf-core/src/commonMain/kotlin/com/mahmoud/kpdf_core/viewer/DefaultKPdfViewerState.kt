@@ -68,6 +68,7 @@ internal class DefaultKPdfViewerState(
         onBufferOverflow = BufferOverflow.DROP_OLDEST,
     )
     private val _currentPage = MutableStateFlow(0)
+    private val _currentZoom = MutableStateFlow(config.minZoom)
     private val inFlightRenderMutex = Mutex()
     private val inFlightRenders = mutableMapOf<KPdfPageCacheKey, Deferred<Result<KPdfPageBitmap>>>()
 
@@ -85,6 +86,7 @@ internal class DefaultKPdfViewerState(
 
     override val loadState: StateFlow<KPdfLoadState> = _loadState
     override val currentPageIndex: StateFlow<Int> = _currentPage
+    override val currentZoom: StateFlow<Float> = _currentZoom
     override val renderedPage: StateFlow<KPdfRenderedPageState> = _renderedPage
     override val openDocumentState: StateFlow<KPdfOpenDocumentState> = _openDocumentState
     override val openDocumentRequests: Flow<KPdfOpenDocumentRequest> = _openDocumentRequests.asSharedFlow()
@@ -105,6 +107,7 @@ internal class DefaultKPdfViewerState(
             _loadState.update { KPdfLoadState.Loading }
             _renderedPage.update { KPdfRenderedPageState.Idle }
             _currentPage.update { 0 }
+            _currentZoom.update { config.minZoom }
 
             repository.open(source).fold(
                 onSuccess = { opened ->
@@ -159,8 +162,26 @@ internal class DefaultKPdfViewerState(
 
         scope.launch {
             _currentPage.update { index }
+            _currentZoom.update { config.minZoom }
             renderCurrentPage(pageIndex = index)
         }
+    }
+
+    override fun setZoom(zoom: Float) {
+        val targetZoom = zoom.coerceIn(config.minZoom, config.maxZoom)
+        _currentZoom.update { targetZoom }
+    }
+
+    override fun zoomIn() {
+        setZoom(_currentZoom.value + ZoomStep)
+    }
+
+    override fun zoomOut() {
+        setZoom(_currentZoom.value - ZoomStep)
+    }
+
+    override fun resetZoom() {
+        _currentZoom.update { config.minZoom }
     }
 
     override fun close() {
@@ -173,6 +194,7 @@ internal class DefaultKPdfViewerState(
         scope.launch {
             closeCurrentDocument()
             _currentPage.update { 0 }
+            _currentZoom.update { config.minZoom }
             _loadState.update { KPdfLoadState.Idle }
             _renderedPage.update { KPdfRenderedPageState.Idle }
         }
@@ -601,6 +623,7 @@ internal class DefaultKPdfViewerState(
     private companion object {
         const val DefaultTargetWidth = 1200
         const val DefaultTargetHeight = 1600
+        const val ZoomStep = 0.25f
     }
 }
 

@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
      val config: KPdfViewerConfig
      val loadState: StateFlow<KPdfLoadState>
      val currentPageIndex: StateFlow<Int>
+     val currentZoom: StateFlow<Float>
 
      val renderedPage: StateFlow<KPdfRenderedPageState>
      val openDocumentState: StateFlow<KPdfOpenDocumentState>
@@ -51,6 +52,26 @@ import kotlinx.coroutines.flow.StateFlow
      * @param pageIndex The 0-based index of the page to display.
      */
      fun goToPage(index: Int)
+
+    /**
+     * Updates the current zoom level for the active page surface.
+     */
+     fun setZoom(zoom: Float)
+
+    /**
+     * Increases the current zoom level by one viewer-defined step.
+     */
+     fun zoomIn()
+
+    /**
+     * Decreases the current zoom level by one viewer-defined step.
+     */
+     fun zoomOut()
+
+    /**
+     * Resets the current zoom back to the configured minimum.
+     */
+     fun resetZoom()
 
     /**
      * Closes the active document and releases resources owned by this state.

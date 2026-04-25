@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,10 +44,10 @@ internal actual fun KPlatformImageView(
     config: KPdfViewerConfig,
     modifier: Modifier
 ) {
-    var scale by remember(page.pageIndex) { mutableStateOf(config.minZoom) }
     var offset by remember(page.pageIndex) { mutableStateOf(Offset.Zero) }
     var viewportSize by remember(page.pageIndex) { mutableStateOf(IntSize.Zero) }
     var displayedPage by remember(page.pageIndex) { mutableStateOf(page) }
+    val scale by state.currentZoom.collectAsState()
 
     LaunchedEffect(page) {
         displayedPage = page
@@ -63,18 +64,19 @@ internal actual fun KPlatformImageView(
     }
 
     fun updateScale(targetScale: Float) {
-        scale = targetScale.coerceIn(config.minZoom, config.maxZoom)
-        offset = clampOffset(offset, scale)
+        val boundedScale = targetScale.coerceIn(config.minZoom, config.maxZoom)
+        state.setZoom(boundedScale)
+        offset = clampOffset(offset, boundedScale)
     }
 
     fun resetZoom() {
-        scale = config.minZoom
+        state.resetZoom()
         offset = Offset.Zero
     }
 
     val transformableState = rememberTransformableState { zoomChange, panChange, _ ->
         val nextScale = (scale * zoomChange).coerceIn(config.minZoom, config.maxZoom)
-        scale = nextScale
+        state.setZoom(nextScale)
         offset = if (nextScale > config.minZoom) {
             clampOffset(offset + panChange, nextScale)
         } else {

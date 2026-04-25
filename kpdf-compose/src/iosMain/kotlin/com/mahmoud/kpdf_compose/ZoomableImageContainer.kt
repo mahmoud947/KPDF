@@ -30,6 +30,9 @@ class ZoomableImageContainer(
     private val maxZoom: Double = 4.0,
     private val doubleTapZoom: Double = 2.0
 ) : UIView(frame) {
+    var onZoomChanged: ((Double) -> Unit)? = null
+
+    private var lastImage: UIImage? = null
 
     private val imageView = UIImageView().apply {
         contentMode = UIViewContentModeScaleAspectFit
@@ -44,6 +47,7 @@ class ZoomableImageContainer(
 
         override fun scrollViewDidZoom(scrollView: UIScrollView) {
             centerImage()
+            onZoomChanged?.invoke(scrollView.zoomScale)
         }
     }
 
@@ -83,9 +87,18 @@ class ZoomableImageContainer(
     }
 
     fun setImage(image: UIImage?) {
+        if (lastImage === image) return
+        lastImage = image
         imageView.image = image
         scrollView.setZoomScale(minZoom, animated = false)
         centerImage()
+        onZoomChanged?.invoke(scrollView.zoomScale)
+    }
+
+    fun setExternalZoom(scale: Double, animated: Boolean) {
+        val boundedScale = scale.coerceIn(minZoom, maxZoom)
+        if (kotlin.math.abs(scrollView.zoomScale - boundedScale) < 0.01) return
+        scrollView.setZoomScale(boundedScale, animated = animated)
     }
 
     @ObjCAction

@@ -18,24 +18,26 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mahmoud.kpdf_compose.KPdfThumbnailStrip
 import com.mahmoud.kpdf_compose.KPdfViewer
+import com.mahmoud.kpdf_compose.KPdfViewerToolbar
 import com.mahmoud.kpdf_compose.rememberPdfViewerState
 import com.mahmoud.kpdf_core.api.KPdfOpenDocumentState
 import com.mahmoud.kpdf_core.api.KPdfSaveState
 import com.mahmoud.kpdf_core.api.KPdfSource
 import com.mahmoud.kpdf_core.api.KPdfViewerConfig
-import kotlinx.coroutines.runBlocking
-import com.mahmoud.kpdf.composeapp.generated.resources.Res
+import kotlinx.coroutines.launch
 
 @Composable
 @Preview
 fun App() {
     MaterialTheme {
-        val pdf = runBlocking { Res.readBytes("files/sample.pdf") }
         val source = KPdfSource.Url("https://exeterchessclub.org.uk/chessx/pdf/TacticsCourse.pdf")
         val kPdfState = rememberPdfViewerState(
             source = source,
             config = KPdfViewerConfig.builder().preloadPageCount(1).diskCacheSize(50).build()
         )
+        val scope = rememberCoroutineScope()
+        var isThumbnailStripVisible by remember { mutableStateOf(true) }
+        var shareMessage by remember { mutableStateOf<String?>(null) }
         val openDocumentState by kPdfState.openDocumentState.collectAsState()
         val saveState by kPdfState.saveState.collectAsState()
 
@@ -52,19 +54,37 @@ fun App() {
             Column(
                 modifier = Modifier.fillMaxSize().padding(paddingValues)
             ) {
+                KPdfViewerToolbar(
+                    state = kPdfState,
+                    isThumbnailStripVisible = isThumbnailStripVisible,
+                    onThumbnailToggle = { isThumbnailStripVisible = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    onShareClick = {
+                        scope.launch {
+                            shareMessage = kPdfState.exportPdf().fold(
+                                onSuccess = { bytes -> "Share payload ready (${bytes.size} bytes)." },
+                                onFailure = { throwable -> throwable.message ?: "Unable to prepare PDF share payload." },
+                            )
+                        }
+                    },
+                )
                 KPdfViewer(
                     state = kPdfState,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(4f)
                 )
-                KPdfThumbnailStrip(
-                    state = kPdfState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(172.dp)
-                        .padding(horizontal = 12.dp),
-                )
+                if (isThumbnailStripVisible) {
+                    KPdfThumbnailStrip(
+                        state = kPdfState,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(172.dp)
+                            .padding(horizontal = 12.dp),
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     verticalAlignment = Alignment.CenterVertically,
@@ -98,6 +118,12 @@ fun App() {
                     )
                 }
                 openDocumentMessage(openDocumentState)?.let { message ->
+                    Text(
+                        text = message,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
+                shareMessage?.let { message ->
                     Text(
                         text = message,
                         modifier = Modifier.padding(horizontal = 16.dp),

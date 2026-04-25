@@ -1,6 +1,8 @@
 package com.mahmoud.kpdf_compose
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
@@ -28,6 +30,7 @@ internal actual fun KPlatformImageView(
     config: KPdfViewerConfig,
     modifier: Modifier
 ) {
+    val sharedZoom by state.currentZoom.collectAsState()
     val uiImage = page.image.uiImage ?: return
 
     if (!config.enableZoom) {
@@ -59,11 +62,16 @@ internal actual fun KPlatformImageView(
                 minZoom = config.minZoom.toDouble(),
                 maxZoom = config.maxZoom.toDouble(),
                 doubleTapZoom = config.doubleTapZoom.toDouble()
-            )
+            ).apply {
+                onZoomChanged = { zoom ->
+                    state.setZoom(zoom.toFloat())
+                }
+            }
         },
         modifier = modifier,
         update = { container ->
             container.setImage(uiImage)
+            container.setExternalZoom(sharedZoom.toDouble(), animated = false)
         },
         onRelease = {},
         properties = UIKitInteropProperties(
