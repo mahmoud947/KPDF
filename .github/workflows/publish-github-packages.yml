@@ -6,7 +6,7 @@ on:
       - "v*"
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 concurrency:
@@ -62,3 +62,12 @@ jobs:
         run: ./gradlew publishAllPublicationsToGithubPackagesRepository --stacktrace --info
         env:
           ORG_GRADLE_PROJECT_VERSION_NAME: ${{ env.VERSION_NAME }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: KPDF ${{ github.ref_name }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
