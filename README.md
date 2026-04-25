@@ -37,19 +37,26 @@ implementation("com.mahmoud.kpdf:kpdf-compose:1.0.3")
 ```kotlin
 @Composable
 fun PdfScreen(source: KPdfSource) {
-    val viewerState = rememberPdfViewerState(
-        source = source,
-        config = KPdfViewerConfig.builder()
+    val stableSource = remember(source) { source }
+    val viewerConfig = remember {
+        KPdfViewerConfig.builder()
             .enableSwipe(true)
             .ramCacheSize(6)
             .diskCacheSize(24)
             .preloadPageCount(2)
-            .build(),
+            .build()
+    }
+
+    val viewerState = rememberPdfViewerState(
+        source = stableSource,
+        config = viewerConfig,
     )
 
     KPdfViewer(state = viewerState)
 }
 ```
+
+Keep `source` and `config` stable in Compose. If you rebuild `KPdfViewerConfig` inline on every recomposition, `rememberPdfViewerState(...)` will recreate the viewer state and transient flows such as `openDocumentState` can appear to reset back to `Idle`.
 
 ## Connected Views
 
@@ -95,6 +102,8 @@ Button(onClick = { viewerState.requestOpenFromDevice() }) {
     Text("Open Local")
 }
 ```
+
+If `openDocumentState` never moves to `AwaitingSelection` or `Success`, first make sure the same `viewerState` instance is being retained across recompositions by remembering the `source` and `KPdfViewerConfig`.
 
 ## Save The Current PDF
 

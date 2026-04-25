@@ -56,20 +56,27 @@ In Compose, the easiest entry point is `rememberPdfViewerState`.
 ```kotlin
 @Composable
 fun PdfScreen(source: KPdfSource) {
-    val viewerState = rememberPdfViewerState(
-        source = source,
-        config = KPdfViewerConfig.builder()
+    val stableSource = remember(source) { source }
+    val viewerConfig = remember {
+        KPdfViewerConfig.builder()
             .zoomRange(minZoom = 1f, maxZoom = 5f)
             .doubleTapZoom(2f)
             .ramCacheSize(6)
             .diskCacheSize(24)
             .preloadPageCount(2)
-            .build(),
+            .build()
+    }
+
+    val viewerState = rememberPdfViewerState(
+        source = stableSource,
+        config = viewerConfig,
     )
 
     KPdfViewer(state = viewerState)
 }
 ```
+
+Keep `source` and `config` stable in Compose. If you rebuild `KPdfViewerConfig` inline on every recomposition, `rememberPdfViewerState(...)` will create a new viewer state and transient flows such as `openDocumentState` can reset.
 
 If you want to create the state manually through the core SDK facade:
 
@@ -317,6 +324,10 @@ Button(onClick = { viewerState.requestOpenFromDevice() }) {
     Text("Open Local PDF")
 }
 ```
+
+Troubleshooting:
+- If `openDocumentState` stays at `Idle`, make sure the `viewerState` is not being recreated by a newly built `KPdfViewerConfig` on every recomposition.
+- If the picker returns `Success`, call `viewerState.open(selectedSource)` to replace the current document.
 
 ## 8. Save The Current PDF
 

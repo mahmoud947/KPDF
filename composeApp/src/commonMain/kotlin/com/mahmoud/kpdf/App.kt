@@ -1,162 +1,210 @@
 package com.mahmoud.kpdf
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.mahmoud.kpdf_compose.KPdfThumbnailStrip
-import com.mahmoud.kpdf_compose.KPdfViewer
-import com.mahmoud.kpdf_compose.KPdfViewerToolbar
+import com.mahmoud.kpdf.common.ScreenTabs
+import com.mahmoud.kpdf.composeapp.generated.resources.Res
+import com.mahmoud.kpdf.screens.Base64Screen
+import com.mahmoud.kpdf.screens.ControlsScreen
+import com.mahmoud.kpdf.screens.LocalScreen
+import com.mahmoud.kpdf.screens.RemoteScreen
+import com.mahmoud.kpdf.screens.ResourceScreen
 import com.mahmoud.kpdf_compose.rememberPdfViewerState
 import com.mahmoud.kpdf_core.api.KPdfOpenDocumentState
-import com.mahmoud.kpdf_core.api.KPdfSaveState
 import com.mahmoud.kpdf_core.api.KPdfSource
-import com.mahmoud.kpdf_core.api.KPdfViewerConfig
+import com.mahmoud.kpdf_core.api.KPdfSource.Base64
+import com.mahmoud.kpdf_core.api.KPdfSource.Bytes
 import kotlinx.coroutines.launch
+
+/**
+ * Created by Mahmoud kamal El-Din on 25/04/2026
+ */
+
+private const val RemoteDemoUrl = "https://exeterchessclub.org.uk/chessx/pdf/TacticsCourse.pdf"
 
 @Composable
 @Preview
 fun App() {
-    MaterialTheme {
-        val source = KPdfSource.Url("https://exeterchessclub.org.uk/chessx/pdf/TacticsCourse.pdf")
-        val kPdfState = rememberPdfViewerState(
-            source = source,
-            config = KPdfViewerConfig.builder().preloadPageCount(1).diskCacheSize(50).enableSwipe(true).build()
-        )
-        val scope = rememberCoroutineScope()
-        var isThumbnailStripVisible by remember { mutableStateOf(true) }
-        var shareMessage by remember { mutableStateOf<String?>(null) }
-        val openDocumentState by kPdfState.openDocumentState.collectAsState()
-        val saveState by kPdfState.saveState.collectAsState()
-
-        LaunchedEffect(openDocumentState) {
-            val selectedSource = (openDocumentState as? KPdfOpenDocumentState.Success)?.source
-                ?: return@LaunchedEffect
-
-            kPdfState.open(selectedSource)
+    MaterialTheme(
+        colorScheme = lightColorScheme(
+            primary = Color(0xFF2563EB),
+            onPrimary = Color.White,
+            primaryContainer = Color(0xFFDBEAFE),
+            onPrimaryContainer = Color(0xFF1E3A8A),
+            secondary = Color(0xFF0F766E),
+            onSecondary = Color.White,
+            secondaryContainer = Color(0xFFDDF7F3),
+            onSecondaryContainer = Color(0xFF134E4A),
+            background = Color(0xFFF7F8FC),
+            surface = Color.White,
+            surfaceContainer = Color(0xFFF1F5F9),
+            surfaceContainerLowest = Color(0xFFFBFCFE),
+        ),
+    ) {
+        val sampleBytes by produceState<ByteArray?>(initialValue = null) {
+            value = runCatching { Res.readBytes("files/sample.pdf") }.getOrNull()
+        }
+        val sampleBase64 by produceState<String?>(initialValue = null) {
+            value = runCatching { Res.readBytes("files/base_64_pdf.text").decodeToString() }.getOrNull()
         }
 
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-        ) { paddingValues ->
-            Column(
-                modifier = Modifier.fillMaxSize().padding(paddingValues)
-            ) {
-                KPdfViewerToolbar(
-                    state = kPdfState,
-                    isThumbnailStripVisible = isThumbnailStripVisible,
-                    onThumbnailToggle = { isThumbnailStripVisible = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    onShareClick = {
-                        scope.launch {
-                            shareMessage = kPdfState.exportPdf().fold(
-                                onSuccess = { bytes -> "Share payload ready (${bytes.size} bytes)." },
-                                onFailure = { throwable -> throwable.message ?: "Unable to prepare PDF share payload." },
-                            )
-                        }
-                    },
-                )
-                KPdfViewer(
-                    state = kPdfState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(4f)
-                )
-                if (isThumbnailStripVisible) {
-                    KPdfThumbnailStrip(
-                        state = kPdfState,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(172.dp)
-                            .padding(horizontal = 12.dp),
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    Button(onClick = { kPdfState.previousPage() }) {
-                        Text("Previous")
-                    }
-                    Button(onClick = { kPdfState.nextPage() }) {
-                        Text("Next")
-                    }
-                    Button(
-                        onClick = {
-                            kPdfState.requestOpenFromDevice()
-                        }
-                    ) {
-                        Text("Open Local")
-                    }
+        var currentScreen by remember { mutableStateOf(ShowcaseScreen.Remote) }
+        var contentScreen by remember { mutableStateOf(ShowcaseScreen.Remote) }
+        var importedSource by remember { mutableStateOf<KPdfSource?>(null) }
+        var thumbnailsVisible by remember { mutableStateOf(true) }
+        var status by remember { mutableStateOf<String?>(null) }
+        val scope = rememberCoroutineScope()
+        val config = remember { viewerConfig() }
 
-                    Button(
-                        onClick = {
-                            kPdfState.requestOpenInExternalApp()
-                        }
-                    ) {
-                        Text("Open On External app")
+        val remoteViewerState = rememberPdfViewerState(
+            source = remember { KPdfSource.Url(RemoteDemoUrl) },
+            config = config,
+        )
+        val base64ViewerState = rememberPdfViewerState(
+            source = remember(sampleBase64, sampleBytes) {
+                sampleBase64?.let(KPdfSource::Base64)
+                    ?: sampleBytes?.let(KPdfSource::Bytes)
+                    ?: KPdfSource.Url(RemoteDemoUrl)
+            },
+            config = config,
+        )
+        val resourceViewerState = rememberPdfViewerState(
+            source = remember(sampleBytes, sampleBase64) {
+                sampleBytes?.let(KPdfSource::Bytes)
+                    ?: sampleBase64?.let(KPdfSource::Base64)
+                    ?: KPdfSource.Url(RemoteDemoUrl)
+            },
+            config = config,
+        )
+        val localViewerState = rememberPdfViewerState(
+            source = remember(importedSource, sampleBytes) {
+                importedSource
+                    ?: sampleBytes?.let(KPdfSource::Bytes)
+                    ?: KPdfSource.Url(RemoteDemoUrl)
+            },
+            config = config,
+        )
+
+        val activeViewerState = when (contentScreen) {
+            ShowcaseScreen.Remote -> remoteViewerState
+            ShowcaseScreen.Base64 -> base64ViewerState
+            ShowcaseScreen.Resource -> resourceViewerState
+            ShowcaseScreen.Local -> localViewerState
+            ShowcaseScreen.Controls -> remoteViewerState
+        }
+        val openDocumentState by localViewerState.openDocumentState.collectAsState()
+        val externalOpenState by activeViewerState.externalOpenState.collectAsState()
+
+        LaunchedEffect(openDocumentState) {
+            val source = (openDocumentState as? KPdfOpenDocumentState.Success)?.source ?: return@LaunchedEffect
+            importedSource = source
+            contentScreen = ShowcaseScreen.Local
+            currentScreen = ShowcaseScreen.Local
+            status = "Imported"
+        }
+
+        LaunchedEffect(externalOpenState) {
+            externalOpenState.toStatus()?.let { status = it }
+        }
+
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val widePadding = if (maxWidth >= 900.dp) 24.dp else 16.dp
+
+            Scaffold { padding ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.surface,
+                                    MaterialTheme.colorScheme.surfaceContainerLowest,
+                                ),
+                            ),
+                        )
+                        .padding(padding)
+                        .padding(horizontal = widePadding, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    ScreenTabs(
+                        current = currentScreen,
+                        onSelect = { screen ->
+                            currentScreen = screen
+                            if (screen != ShowcaseScreen.Controls) {
+                                contentScreen = screen
+                            }
+                        },
+                    )
+
+                    when (currentScreen) {
+                        ShowcaseScreen.Remote -> RemoteScreen(
+                            state = remoteViewerState,
+                            thumbnailsVisible = thumbnailsVisible,
+                            onToggleThumbnails = { thumbnailsVisible = it },
+                            onImportClick = { localViewerState.requestOpenFromDevice() },
+                        )
+
+                        ShowcaseScreen.Base64 -> Base64Screen(
+                            state = base64ViewerState,
+                            thumbnailsVisible = thumbnailsVisible,
+                            onToggleThumbnails = { thumbnailsVisible = it },
+                            onImportClick = { localViewerState.requestOpenFromDevice() },
+                        )
+
+                        ShowcaseScreen.Resource -> ResourceScreen(
+                            state = resourceViewerState,
+                            thumbnailsVisible = thumbnailsVisible,
+                            onToggleThumbnails = { thumbnailsVisible = it },
+                            onImportClick = { localViewerState.requestOpenFromDevice() },
+                        )
+
+                        ShowcaseScreen.Local -> LocalScreen(
+                            state = localViewerState,
+                            hasImportedSource = importedSource != null,
+                            thumbnailsVisible = thumbnailsVisible,
+                            onToggleThumbnails = { thumbnailsVisible = it },
+                            onImportClick = { localViewerState.requestOpenFromDevice() },
+                        )
+
+                        ShowcaseScreen.Controls -> ControlsScreen(
+                            state = activeViewerState,
+                            thumbnailsVisible = thumbnailsVisible,
+                            onToggleThumbnails = { thumbnailsVisible = !thumbnailsVisible },
+                            onShare = {
+                                scope.launch {
+                                    status = activeViewerState.exportPdf().fold(
+                                        onSuccess = { "Exported ${it.size} bytes" },
+                                        onFailure = { error -> error.message ?: "Export failed" },
+                                    )
+                                }
+                            },
+                            onImportClick = { localViewerState.requestOpenFromDevice() },
+                            onOpenExternal = { activeViewerState.requestOpenInExternalApp() },
+                        )
                     }
-                    Button(
-                        onClick = {
-                            kPdfState.requestSave()
-                        }
-                    ) {
-                        Text("Save")
-                    }
-                }
-                saveMessage(saveState)?.let { message ->
-                    Text(
-                        text = message,
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                    )
-                }
-                openDocumentMessage(openDocumentState)?.let { message ->
-                    Text(
-                        text = message,
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                    )
-                }
-                shareMessage?.let { message ->
-                    Text(
-                        text = message,
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                    )
                 }
             }
         }
     }
 }
-
-private fun openDocumentMessage(state: KPdfOpenDocumentState): String? =
-    when (state) {
-        is KPdfOpenDocumentState.Idle -> null
-        is KPdfOpenDocumentState.AwaitingSelection -> "Choose a PDF to open."
-        is KPdfOpenDocumentState.Success -> "PDF selected."
-        is KPdfOpenDocumentState.Cancelled -> "Open PDF was cancelled."
-        is KPdfOpenDocumentState.Error -> state.reason.message
-    }
-
-private fun saveMessage(saveState: KPdfSaveState): String? =
-    when (saveState) {
-        KPdfSaveState.Idle -> null
-        KPdfSaveState.Exporting -> "Preparing the PDF for save..."
-        is KPdfSaveState.AwaitingDestination -> "Choose where to save the PDF."
-        is KPdfSaveState.Success -> "PDF saved successfully."
-        is KPdfSaveState.Cancelled -> "Save was cancelled."
-        is KPdfSaveState.Error -> saveState.reason.message
-    }

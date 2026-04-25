@@ -30,15 +30,22 @@ Other supported options:
 ## 3. Create Viewer State
 
 ```kotlin
-val viewerState = rememberPdfViewerState(
-    source = source,
-    config = KPdfViewerConfig.builder()
+val stableSource = remember(source) { source }
+val viewerConfig = remember {
+    KPdfViewerConfig.builder()
         .enableSwipe(true)
         .preloadPageCount(1)
         .diskCacheSize(50)
         .build(),
+}
+
+val viewerState = rememberPdfViewerState(
+    source = stableSource,
+    config = viewerConfig,
 )
 ```
+
+Important: keep `source` and `config` stable with `remember(...)`. Rebuilding `KPdfViewerConfig` inline on each recomposition will recreate the viewer state and reset transient flows such as `openDocumentState`.
 
 ## 4. Render The Viewer
 
@@ -95,6 +102,8 @@ Trigger the picker:
 ```kotlin
 viewerState.requestOpenFromDevice()
 ```
+
+If the picker flow appears stuck in `Idle`, verify that your composable is not recreating the `viewerState` by passing a brand-new `KPdfViewerConfig` instance on every recomposition.
 
 ## 7. Handle Save
 
