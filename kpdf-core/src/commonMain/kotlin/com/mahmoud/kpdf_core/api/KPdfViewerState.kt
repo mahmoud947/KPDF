@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
      val source: KPdfSource
      val config: KPdfViewerConfig
      val loadState: StateFlow<KPdfLoadState>
+     val currentPageIndex: StateFlow<Int>
 
      val renderedPage: StateFlow<KPdfRenderedPageState>
      val openDocumentState: StateFlow<KPdfOpenDocumentState>

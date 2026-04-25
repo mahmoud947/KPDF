@@ -84,6 +84,7 @@ internal class DefaultKPdfViewerState(
     private var activeSaveRequest: KPdfSaveRequest? = null
 
     override val loadState: StateFlow<KPdfLoadState> = _loadState
+    override val currentPageIndex: StateFlow<Int> = _currentPage
     override val renderedPage: StateFlow<KPdfRenderedPageState> = _renderedPage
     override val openDocumentState: StateFlow<KPdfOpenDocumentState> = _openDocumentState
     override val openDocumentRequests: Flow<KPdfOpenDocumentRequest> = _openDocumentRequests.asSharedFlow()
@@ -103,6 +104,7 @@ internal class DefaultKPdfViewerState(
 
             _loadState.update { KPdfLoadState.Loading }
             _renderedPage.update { KPdfRenderedPageState.Idle }
+            _currentPage.update { 0 }
 
             repository.open(source).fold(
                 onSuccess = { opened ->
@@ -116,7 +118,9 @@ internal class DefaultKPdfViewerState(
                     }
 
                     if (opened.pageCount > 0) {
-                        renderCurrentPage(pageIndex = _currentPage.value)
+                        val initialPageIndex = _currentPage.value.coerceIn(0, opened.pageCount - 1)
+                        _currentPage.update { initialPageIndex }
+                        renderCurrentPage(pageIndex = initialPageIndex)
                     } else {
                         _renderedPage.update {
                             KPdfRenderedPageState.Error(
@@ -168,6 +172,7 @@ internal class DefaultKPdfViewerState(
 
         scope.launch {
             closeCurrentDocument()
+            _currentPage.update { 0 }
             _loadState.update { KPdfLoadState.Idle }
             _renderedPage.update { KPdfRenderedPageState.Idle }
         }
