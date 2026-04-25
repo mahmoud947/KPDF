@@ -135,3 +135,11 @@ Button(onClick = { viewerState.openInExternalApp() }) {
   :kpdf-compose:compileKotlinIosSimulatorArm64 \
   :composeApp:compileDebugKotlinAndroid
 ```
+
+### DEMO
+
+https://github.com/user-attachments/assets/4d590fe5-e503-4954-bd96-0735c9d718c7
+
+
+
+
