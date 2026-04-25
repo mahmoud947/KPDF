@@ -1,11 +1,11 @@
 package com.mahmoud.kpdf
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.lightColorScheme
@@ -19,7 +19,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -50,8 +49,8 @@ fun App() {
         colorScheme = lightColorScheme(
             primary = Color(0xFF2563EB),
             onPrimary = Color.White,
-            primaryContainer = Color(0xFFDBEAFE),
-            onPrimaryContainer = Color(0xFF1E3A8A),
+            primaryContainer = Color(0xFF1A94F1),
+            onPrimaryContainer = Color(0xFFFFFFFF),
             secondary = Color(0xFF0F766E),
             onSecondary = Color.White,
             secondaryContainer = Color(0xFFDDF7F3),
@@ -60,6 +59,11 @@ fun App() {
             surface = Color.White,
             surfaceContainer = Color(0xFFF1F5F9),
             surfaceContainerLowest = Color(0xFFFBFCFE),
+            surfaceVariant = Color(0xFFFFFFFF),
+            surfaceContainerHigh = Color(0xFFFFFFFF),
+            surfaceContainerHighest = Color(0xFFFDFDFD),
+            outline = Color(0xFF2563EB),
+            outlineVariant = Color(0xFFDBD8D8),
         ),
     ) {
         val sampleBytes by produceState<ByteArray?>(initialValue = null) {
@@ -131,18 +135,12 @@ fun App() {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val widePadding = if (maxWidth >= 900.dp) 24.dp else 16.dp
 
-            Scaffold { padding ->
+            Scaffold(
+                containerColor = Color.Transparent,
+            ) { padding ->
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    MaterialTheme.colorScheme.surface,
-                                    MaterialTheme.colorScheme.surfaceContainerLowest,
-                                ),
-                            ),
-                        )
                         .padding(padding)
                         .padding(horizontal = widePadding, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
