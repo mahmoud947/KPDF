@@ -1,0 +1,79 @@
+name: Publish Maven Central
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish when running manually"
+        required: true
+        default: "1.0.0-SNAPSHOT"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-maven-central-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish KMP artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+      ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+      ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_IN_MEMORY_KEY }}
+      ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_IN_MEMORY_KEY_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Derive version from tag
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          echo "VERSION_NAME=${TAG_VERSION}" >> "$GITHUB_ENV"
+
+      - name: Use manual version for workflow dispatch
+        if: github.event_name == 'workflow_dispatch'
+        run: echo "VERSION_NAME=${{ inputs.version }}" >> "$GITHUB_ENV"
+
+      - name: Show publish context
+        run: |
+          echo "Repository: $GITHUB_REPOSITORY"
+          echo "Ref: $GITHUB_REF"
+          echo "Version: ${VERSION_NAME}"
+          ./gradlew --version
+
+      - name: Publish to Maven Central
+        run: ./gradlew publishAndReleaseToMavenCentral --stacktrace --info
+        env:
+          ORG_GRADLE_PROJECT_VERSION_NAME: ${{ env.VERSION_NAME }}
+
+      - name: Create GitHub Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: KPDF ${{ github.ref_name }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

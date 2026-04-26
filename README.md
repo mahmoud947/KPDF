@@ -31,6 +31,19 @@ If you are testing the library locally before a Central release, publish from th
 
 Then add `mavenLocal()` before `mavenCentral()` in the consumer project's repositories.
 
+## Publishing
+
+This repository includes a GitHub Actions workflow that publishes tagged releases to Maven Central.
+
+Required GitHub repository secrets:
+
+- `MAVEN_CENTRAL_USERNAME`
+- `MAVEN_CENTRAL_PASSWORD`
+- `SIGNING_IN_MEMORY_KEY`
+- `SIGNING_IN_MEMORY_KEY_PASSWORD`
+
+For a release publish, create and push a tag like `v1.0.1`. The workflow derives `1.0.1` from the tag and runs `publishAndReleaseToMavenCentral`.
+
 ## Current Features
 
 - URL, Base64, bytes, and resource-backed PDF sources
