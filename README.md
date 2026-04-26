@@ -23,26 +23,6 @@ implementation("io.github.mahmoud947:kpdf-compose:1.0.0")
 
 Make sure the consumer project includes `mavenCentral()` in its repositories.
 
-If you are testing the library locally before a Central release, publish from this repository first:
-
-```bash
-./gradlew publishToMavenLocal
-```
-
-Then add `mavenLocal()` before `mavenCentral()` in the consumer project's repositories.
-
-## Publishing
-
-This repository includes a GitHub Actions workflow that publishes tagged releases to Maven Central.
-
-Required GitHub repository secrets:
-
-- `MAVEN_CENTRAL_USERNAME`
-- `MAVEN_CENTRAL_PASSWORD`
-- `SIGNING_IN_MEMORY_KEY`
-- `SIGNING_IN_MEMORY_KEY_PASSWORD`
-
-For a release publish, create and push a tag like `v1.0.1`. The workflow derives `1.0.1` from the tag and runs `publishAndReleaseToMavenCentral`.
 
 ## Current Features
 

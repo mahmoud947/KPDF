@@ -26,7 +26,6 @@ jobs:
     env:
       ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
       ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
-      ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_IN_MEMORY_KEY }}
       ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_IN_MEMORY_KEY_PASSWORD }}
 
     steps:
@@ -62,6 +61,32 @@ jobs:
           echo "Ref: $GITHUB_REF"
           echo "Version: ${VERSION_NAME}"
           ./gradlew --version
+
+      - name: Prepare signing key
+        shell: bash
+        env:
+          RAW_SIGNING_KEY: ${{ secrets.SIGNING_IN_MEMORY_KEY }}
+          BASE64_SIGNING_KEY: ${{ secrets.SIGNING_IN_MEMORY_KEY_BASE64 }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "${BASE64_SIGNING_KEY:-}" ]; then
+            {
+              echo "ORG_GRADLE_PROJECT_signingInMemoryKey<<EOF"
+              printf '%s' "$BASE64_SIGNING_KEY" | base64 --decode
+              echo
+              echo "EOF"
+            } >> "$GITHUB_ENV"
+          elif [ -n "${RAW_SIGNING_KEY:-}" ]; then
+            {
+              echo "ORG_GRADLE_PROJECT_signingInMemoryKey<<EOF"
+              printf '%s\n' "$RAW_SIGNING_KEY"
+              echo "EOF"
+            } >> "$GITHUB_ENV"
+          else
+            echo "Missing signing key secret. Set SIGNING_IN_MEMORY_KEY or SIGNING_IN_MEMORY_KEY_BASE64." >&2
+            exit 1
+          fi
 
       - name: Publish to Maven Central
         run: ./gradlew publishAndReleaseToMavenCentral --stacktrace --info
