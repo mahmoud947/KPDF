@@ -14,7 +14,7 @@ Current version: `1.0.0`
 
 ## Installation
 
-Add the SDK modules to your Gradle dependencies:
+Add the library modules to your Gradle dependencies:
 
 ```kotlin
 implementation("com.mahmoud.kpdf:kpdf-core:1.0.0")
@@ -128,7 +128,7 @@ Button(onClick = { viewerState.openInExternalApp() }) {
 ## Documentation
 
 - Hosted documentation: [Mintlify Docs](https://mahmoud-b28887f9.mintlify.app/)
-- SDK guide: [docs/SDK.md](docs/SDK.md)
+- Library guide: [docs/SDK.md](docs/SDK.md)
 - Integration guide: [docs/INTEGRATION.md](docs/INTEGRATION.md)
 
 ## Verification
@@ -144,6 +144,5 @@ Button(onClick = { viewerState.openInExternalApp() }) {
 ### DEMO
 
 https://github.com/user-attachments/assets/4d590fe5-e503-4954-bd96-0735c9d718c7
-
 
 

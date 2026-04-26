@@ -2,7 +2,7 @@
 
 This guide shows the recommended integration path for KPDF in a Compose Multiplatform application.
 
-## 1. Add The SDK Modules
+## 1. Add The Library Modules
 
 Add:
 
@@ -153,4 +153,4 @@ scope.launch {
 
 ## 10. Read More
 
-For the full usage guide and advanced customization examples, see [SDK.md](/Users/mahmoudkamal/AndroidStudioProjects/KPDF/docs/SDK.md:1).
+For the full usage guide and advanced customization examples, see [Library guide](SDK.md).

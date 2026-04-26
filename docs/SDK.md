@@ -1,8 +1,8 @@
-# KPDF SDK Guide
+# KPDF Library Guide
 
-KPDF is a Kotlin Multiplatform PDF SDK for Android and iOS with a Compose Multiplatform viewer layer.
+KPDF is a Kotlin Multiplatform PDF library for Android and iOS with a Compose Multiplatform viewer layer.
 
-This document focuses on how to integrate and use the SDK in real applications.
+This document focuses on how to integrate and use the library in real applications.
 
 ## Modules
 
@@ -11,7 +11,7 @@ This document focuses on how to integrate and use the SDK in real applications.
 - `kpdf-compose`
   Compose Multiplatform UI components and platform integration for save/open flows.
 - `composeApp`
-  Sample application that demonstrates how the SDK is intended to be used.
+  Sample application that demonstrates how the library is intended to be used.
 
 ## What You Use Most
 
@@ -78,7 +78,7 @@ fun PdfScreen(source: KPdfSource) {
 
 Keep `source` and `config` stable in Compose. If you rebuild `KPdfViewerConfig` inline on every recomposition, `rememberPdfViewerState(...)` will create a new viewer state and transient flows such as `openDocumentState` can reset.
 
-If you want to create the state manually through the core SDK facade:
+If you want to create the state manually through the core library facade:
 
 ```kotlin
 val sdk = KPdfFactory.create()
@@ -350,7 +350,7 @@ when (saveState) {
 
 ## 9. Open The Current PDF In An External App
 
-Use `openInExternalApp()` when you want the SDK to hand the current PDF to any installed app that can open PDFs.
+Use `openInExternalApp()` when you want the library to hand the current PDF to any installed app that can open PDFs.
 
 ```kotlin
 Button(onClick = { viewerState.openInExternalApp() }) {
@@ -470,9 +470,9 @@ fun FullPdfScreen(source: KPdfSource) {
 - Use one `KPdfViewerState` per visible viewer instance.
 - Reuse the same state across connected views like the main viewer, toolbar, and thumbnail strip.
 - Use `KPdfThumbnailStrip` for page overview navigation instead of rendering full pages in a secondary surface.
-- Use `openInExternalApp()` when you want the SDK to launch an installed PDF viewer app.
+- Use `openInExternalApp()` when you want the library to launch an installed PDF viewer app.
 - Use `exportPdf()` for app-managed share flows.
-- Use `requestSave()` when you want the SDK-integrated save/export path.
+- Use `requestSave()` when you want the library-integrated save/export path.
 - Prefer `rememberPdfViewerState` in Compose unless you have a strong reason to manage lifecycle yourself.
 
 ## Notes
