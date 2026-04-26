@@ -1,13 +1,9 @@
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SourcesJar
-import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.kotlin.dsl.configure
-import org.gradle.kotlin.dsl.credentials
-import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.withType
-import org.gradle.plugins.signing.SigningExtension
 
 val publishedModules = setOf(
     ":kpdf-core",
@@ -27,7 +23,7 @@ plugins {
     id("com.vanniktech.maven.publish") version "0.36.0" apply false
 }
 
-group = providers.gradleProperty("GROUP").orNull ?: "com.mahmoud.kpdf"
+group = providers.gradleProperty("GROUP").orNull ?: "io.github.mahmoud947"
 version = providers.gradleProperty("VERSION_NAME").orNull ?: "0.1.0-SNAPSHOT"
 
 subprojects {
@@ -43,6 +39,8 @@ subprojects {
     plugins.withId("com.vanniktech.maven.publish") {
 
         extensions.configure<MavenPublishBaseExtension> {
+            publishToMavenCentral()
+            signAllPublications()
 
             configureBasedOnAppliedPlugins(
                 javadocJar = JavadocJar.Empty(),
@@ -121,63 +119,6 @@ subprojects {
                 }
             }
 
-        }
-
-        extensions.configure<PublishingExtension> {
-            publications.withType<MavenPublication>().configureEach {
-                pom {
-                    description.set(
-                        providers.gradleProperty("POM_DESCRIPTION")
-                            .orElse(project.description ?: project.name)
-                    )
-                }
-
-            }
-
-            val githubOwner = providers.gradleProperty("githubPackagesOwner")
-                .orElse("mahmoud947")
-            val githubRepository = providers.gradleProperty("githubPackagesRepository")
-                .orElse("KPDF")
-            val repositoryUsername = providers.gradleProperty("githubPackagesUsername")
-                .orElse(providers.environmentVariable("GITHUB_ACTOR"))
-            val repositoryPassword = providers.gradleProperty("githubPackagesPassword")
-                .orElse(providers.environmentVariable("GITHUB_TOKEN"))
-
-            repositories.maven {
-                name = "GithubPackages"
-                url = uri("https://maven.pkg.github.com/${githubOwner.get()}/${githubRepository.get()}")
-                if (repositoryUsername.isPresent && repositoryPassword.isPresent) {
-                    credentials {
-                        username = repositoryUsername.get()
-                        password = repositoryPassword.get()
-                    }
-                }
-            }
-        }
-    }
-
-    plugins.withId("signing") {
-        val signingKey = providers.gradleProperty("signingInMemoryKey")
-            .orElse(providers.environmentVariable("SIGNING_KEY"))
-        val signingPassword = providers.gradleProperty("signingInMemoryKeyPassword")
-            .orElse(providers.environmentVariable("SIGNING_PASSWORD"))
-
-        extensions.configure<SigningExtension> {
-            val shouldSign = signingKey.isPresent &&
-                signingPassword.isPresent &&
-                !version.toString().endsWith("SNAPSHOT")
-
-            setRequired { shouldSign }
-
-            if (shouldSign) {
-                useInMemoryPgpKeys(
-                    signingKey.get(),
-                    signingPassword.get(),
-                )
-                sign(
-                    extensions.getByType(PublishingExtension::class.java).publications
-                )
-            }
         }
     }
 }

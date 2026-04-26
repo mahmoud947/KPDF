@@ -14,12 +14,22 @@ Current version: `1.0.0`
 
 ## Installation
 
-Add the library modules to your Gradle dependencies:
+After publishing to Maven Central, add the library modules to your Gradle dependencies:
 
 ```kotlin
-implementation("com.mahmoud.kpdf:kpdf-core:1.0.0")
-implementation("com.mahmoud.kpdf:kpdf-compose:1.0.0")
+implementation("io.github.mahmoud947:kpdf-core:1.0.0")
+implementation("io.github.mahmoud947:kpdf-compose:1.0.0")
 ```
+
+Make sure the consumer project includes `mavenCentral()` in its repositories.
+
+If you are testing the library locally before a Central release, publish from this repository first:
+
+```bash
+./gradlew publishToMavenLocal
+```
+
+Then add `mavenLocal()` before `mavenCentral()` in the consumer project's repositories.
 
 ## Current Features
 
@@ -144,5 +154,3 @@ Button(onClick = { viewerState.openInExternalApp() }) {
 ### DEMO
 
 https://github.com/user-attachments/assets/4d590fe5-e503-4954-bd96-0735c9d718c7
-
-

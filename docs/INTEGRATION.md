@@ -2,13 +2,19 @@
 
 This guide shows the recommended integration path for KPDF in a Compose Multiplatform application.
 
-## 1. Add The Library Modules
+## 1. Add The Repository
+
+KPDF is intended to be consumed from Maven Central. Make sure the consumer project includes `mavenCentral()` in its repositories.
+
+If you are testing a local checkout instead of a published Central release, run `./gradlew publishToMavenLocal` in the KPDF repository and add `mavenLocal()` in the consumer project's repositories.
+
+## 2. Add The Library Modules
 
 Add:
 
 ```kotlin
-implementation("com.mahmoud.kpdf:kpdf-core:$version")
-implementation("com.mahmoud.kpdf:kpdf-compose:$version")
+implementation("io.github.mahmoud947:kpdf-core:$version")
+implementation("io.github.mahmoud947:kpdf-compose:$version")
 ```
 
 Use:
@@ -16,7 +22,7 @@ Use:
 - `kpdf-core` for shared PDF engine APIs
 - `kpdf-compose` for the Compose viewer and platform save/open integrations
 
-## 2. Create A Source
+## 3. Create A Source
 
 ```kotlin
 val source = KPdfSource.Url("https://example.com/file.pdf")
@@ -27,7 +33,7 @@ Other supported options:
 - `KPdfSource.Bytes(...)`
 - `KPdfSource.Base64(...)`
 
-## 3. Create Viewer State
+## 4. Create Viewer State
 
 ```kotlin
 val stableSource = remember(source) { source }
@@ -47,7 +53,7 @@ val viewerState = rememberPdfViewerState(
 
 Important: keep `source` and `config` stable with `remember(...)`. Rebuilding `KPdfViewerConfig` inline on each recomposition will recreate the viewer state and reset transient flows such as `openDocumentState`.
 
-## 4. Render The Viewer
+## 5. Render The Viewer
 
 ```kotlin
 KPdfViewer(
@@ -56,7 +62,7 @@ KPdfViewer(
 )
 ```
 
-## 5. Add Optional Connected Views
+## 6. Add Optional Connected Views
 
 ### Toolbar
 
@@ -84,7 +90,7 @@ if (thumbnailsVisible) {
 }
 ```
 
-## 6. Handle Open From Device
+## 7. Handle Open From Device
 
 ```kotlin
 val openState by viewerState.openDocumentState.collectAsState()
@@ -105,7 +111,7 @@ viewerState.requestOpenFromDevice()
 
 If the picker flow appears stuck in `Idle`, verify that your composable is not recreating the `viewerState` by passing a brand-new `KPdfViewerConfig` instance on every recomposition.
 
-## 7. Handle Save
+## 8. Handle Save
 
 ```kotlin
 viewerState.requestSave()
@@ -117,7 +123,7 @@ Observe save progress:
 val saveState by viewerState.saveState.collectAsState()
 ```
 
-## 8. Open In External PDF Viewer
+## 9. Open In External PDF Viewer
 
 ```kotlin
 viewerState.openInExternalApp()
@@ -137,7 +143,7 @@ Observe the state:
 val externalOpenState by viewerState.externalOpenState.collectAsState()
 ```
 
-## 9. Handle Share
+## 10. Handle Share
 
 Use `exportPdf()` and route the bytes into your own platform share flow:
 
@@ -151,6 +157,6 @@ scope.launch {
 }
 ```
 
-## 10. Read More
+## 11. Read More
 
 For the full usage guide and advanced customization examples, see [Library guide](SDK.md).
