@@ -81,6 +81,14 @@ KPdfViewerToolbar(
 
 KPdfViewer(state = viewerState)
 
+KPdfVerticalViewer(state = viewerState)
+
+KPdfViewer(
+    state = viewerState,
+    loadingContent = { CircularProgressIndicator() },
+    errorContent = { message -> Text(message) },
+)
+
 if (thumbnailsVisible) {
     KPdfThumbnailStrip(
         state = viewerState,

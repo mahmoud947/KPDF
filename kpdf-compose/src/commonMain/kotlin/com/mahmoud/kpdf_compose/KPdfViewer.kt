@@ -28,6 +28,13 @@ import com.mahmoud.kpdf_core.api.KPdfViewerState
 fun KPdfViewer(
     state: KPdfViewerState,
     modifier: Modifier = Modifier,
+    loadingContent: @Composable () -> Unit = { KPdfDefaultLoadingContent() },
+    errorContent: @Composable (message: String) -> Unit = { message ->
+        KPdfDefaultMessageContent(
+            message = message,
+            color = MaterialTheme.colorScheme.error,
+        )
+    },
 ) {
     val renderedPage by state.renderedPage.collectAsState()
 
@@ -44,6 +51,8 @@ fun KPdfViewer(
             renderedPage = renderedPage,
             config = state.config,
             modifier = Modifier.fillMaxSize(),
+            loadingContent = loadingContent,
+            errorContent = errorContent,
         )
     }
 

@@ -21,6 +21,8 @@ internal fun KPdfContent(
     renderedPage: KPdfRenderedPageState,
     config: KPdfViewerConfig,
     modifier: Modifier = Modifier,
+    loadingContent: @Composable () -> Unit,
+    errorContent: @Composable (message: String) -> Unit,
 ) {
 
     Column(
@@ -35,6 +37,8 @@ internal fun KPdfContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
+            loadingContent = loadingContent,
+            errorContent = errorContent,
         )
     }
 }

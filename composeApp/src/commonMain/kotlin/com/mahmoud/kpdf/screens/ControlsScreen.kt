@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mahmoud.kpdf.common.QuickActionRow
 import com.mahmoud.kpdf_compose.KPdfThumbnailStrip
+import com.mahmoud.kpdf_compose.KPdfVerticalViewer
 import com.mahmoud.kpdf_compose.KPdfViewer
 import com.mahmoud.kpdf_core.api.KPdfViewerState
 
@@ -20,7 +21,9 @@ import com.mahmoud.kpdf_core.api.KPdfViewerState
 fun ControlsScreen(
     state: KPdfViewerState,
     thumbnailsVisible: Boolean,
+    verticalView: Boolean,
     onToggleThumbnails: () -> Unit,
+    onToggleVerticalView: () -> Unit,
     onShare: () -> Unit,
     onImportClick: () -> Unit,
     onOpenExternal: () -> Unit,
@@ -29,12 +32,21 @@ fun ControlsScreen(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        KPdfViewer(
-            state = state,
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-        )
+        if (verticalView) {
+            KPdfVerticalViewer(
+                state = state,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            )
+        } else {
+            KPdfViewer(
+                state = state,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            )
+        }
         QuickActionRow(
             firstLabel = "Share",
             firstAction = onShare,
@@ -46,10 +58,18 @@ fun ControlsScreen(
         QuickActionRow(
             firstLabel = if (thumbnailsVisible) "Hide" else "Thumbs",
             firstAction = onToggleThumbnails,
-            secondLabel = "Retry",
-            secondAction = { state.retry() },
+            secondLabel = if (verticalView) "Paged" else "Vertical",
+            secondAction = onToggleVerticalView,
             thirdLabel = "Reset",
             thirdAction = { state.resetZoom() },
+        )
+        QuickActionRow(
+            firstLabel = "Prev",
+            firstAction = { state.previousPage() },
+            secondLabel = "Next",
+            secondAction = { state.nextPage() },
+            thirdLabel = "Retry",
+            thirdAction = { state.retry() },
         )
         if (thumbnailsVisible) {
             KPdfThumbnailStrip(
