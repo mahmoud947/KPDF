@@ -4,14 +4,21 @@ import com.mahmoud.kpdf_core.api.KPdfDocumentRef
 import com.mahmoud.kpdf_core.api.KPdfError
 import com.mahmoud.kpdf_core.api.KPdfException
 import com.mahmoud.kpdf_core.api.KPdfPageBitmap
+import com.mahmoud.kpdf_core.api.KPdfSearchRect
+import com.mahmoud.kpdf_core.api.KPdfSearchResult
 import com.mahmoud.kpdf_core.image.KPlatformImage
+import kotlinx.cinterop.CValue
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.useContents
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import platform.CoreGraphics.CGRect
 import platform.CoreGraphics.CGRectMake
+import platform.Foundation.NSCaseInsensitiveSearch
 import platform.Foundation.NSURL
 import platform.PDFKit.PDFDocument
+import platform.PDFKit.PDFPage
+import platform.PDFKit.PDFSelection
 import platform.PDFKit.kPDFDisplayBoxMediaBox
 import platform.UIKit.UIColor
 import platform.UIKit.UIGraphicsBeginImageContextWithOptions
@@ -107,6 +114,34 @@ private class IosPdfDocumentRef(
         }
     }
 
+    @OptIn(ExperimentalForeignApi::class)
+    override suspend fun searchText(query: String): Result<List<KPdfSearchResult>> = mutex.withLock {
+        runCatching {
+            checkOpen()
+            val normalizedQuery = query.trim()
+            if (normalizedQuery.isEmpty()) {
+                return@runCatching emptyList()
+            }
+
+            val selections = document.findString(
+                string = normalizedQuery,
+                withOptions = NSCaseInsensitiveSearch,
+            )
+
+            buildList {
+                selections.forEach { selection ->
+                    val pdfSelection = selection as? PDFSelection ?: return@forEach
+                    addSelection(pdfSelection)
+                }
+            }
+        }.recoverCatching {
+            throw when (it) {
+                is KPdfException -> it
+                else -> KPdfException(KPdfError.Unknown(it.message ?: "Unable to search PDF text."), it)
+            }
+        }
+    }
+
     override fun close() {
         closed = true
     }
@@ -116,7 +151,73 @@ private class IosPdfDocumentRef(
             throw KPdfException(KPdfError.Unknown("PDF document is already closed."))
         }
     }
+
+    @OptIn(ExperimentalForeignApi::class)
+    private fun MutableList<KPdfSearchResult>.addSelection(
+        selection: PDFSelection,
+    ) {
+        val page = selection.pages.firstOrNull() as? PDFPage ?: return
+        val pageIndex = document.indexForPage(page).toInt()
+        if (pageIndex !in 0 until pageCount) return
+        val pageBounds = page.boundsForBox(kPDFDisplayBoxMediaBox)
+        val lineBounds = selection.selectionsByLine()
+            .mapNotNull { lineSelection ->
+                (lineSelection as? PDFSelection)
+                    ?.boundsForPage(page)
+                    ?.toSearchRect(pageBounds)
+            }
+        val bounds = lineBounds.ifEmpty {
+            listOf(selection.boundsForPage(page).toSearchRect(pageBounds))
+        }
+
+        add(
+            KPdfSearchResult(
+                pageIndex = pageIndex,
+                matchIndexOnPage = count { it.pageIndex == pageIndex },
+                textStartIndex = 0,
+                bounds = bounds,
+            )
+        )
+    }
 }
+
+@OptIn(ExperimentalForeignApi::class)
+private fun CValue<CGRect>.toSearchRect(
+    pageBounds: CValue<CGRect>,
+): KPdfSearchRect {
+    val selection = useContents {
+        RectValues(
+            minX = origin.x,
+            minY = origin.y,
+            maxX = origin.x + size.width,
+            maxY = origin.y + size.height,
+        )
+    }
+    val page = pageBounds.useContents {
+        RectValues(
+            minX = origin.x,
+            minY = origin.y,
+            maxX = origin.x + size.width,
+            maxY = origin.y + size.height,
+        )
+    }
+    val width = (page.maxX - page.minX).coerceAtLeast(1.0)
+    val height = (page.maxY - page.minY).coerceAtLeast(1.0)
+
+    return KPdfSearchRect(
+        left = ((selection.minX - page.minX) / width).toFloat().coerceIn(0f, 1f),
+        top = (1.0 - ((selection.maxY - page.minY) / height)).toFloat().coerceIn(0f, 1f),
+        right = ((selection.maxX - page.minX) / width).toFloat().coerceIn(0f, 1f),
+        bottom = (1.0 - ((selection.minY - page.minY) / height)).toFloat().coerceIn(0f, 1f),
+    )
+}
+
+private data class RectValues(
+    val minX: Double,
+    val minY: Double,
+    val maxX: Double,
+    val maxY: Double,
+)
 
 private data class IosTargetSize(
     val width: Double,

@@ -32,6 +32,7 @@ Make sure the consumer project includes `mavenCentral()` in its repositories.
 - remote source persistence for offline reopen
 - configurable page preloading
 - shared zoom state
+- text search state and highlighted matches on Android 15+ and iOS
 - save/export flow from `KPdfViewerState`
 - open-in-external-app flow from `KPdfViewerState`
 - open-from-device flow from `KPdfViewerState`
@@ -135,6 +136,20 @@ Button(onClick = { viewerState.openInExternalApp() }) {
     Text("Open In External App")
 }
 ```
+
+## Search Text
+
+```kotlin
+val searchState by viewerState.searchState.collectAsState()
+
+KPdfViewerToolbar(
+    state = viewerState,
+    isThumbnailStripVisible = thumbnailsVisible,
+    onThumbnailToggle = { thumbnailsVisible = it },
+)
+```
+
+Type a query into the toolbar search field and tap Search. The toolbar then shows match count, previous/next match controls, and clear search. Search results move the viewer to the active match. Android 15+ and iOS also draw translucent match highlights.
 
 ## Documentation
 

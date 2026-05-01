@@ -1,6 +1,8 @@
 package com.mahmoud.kpdf_compose
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -18,7 +20,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.graphicsLayer
@@ -26,8 +31,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.foundation.gestures.Orientation
 import com.mahmoud.kpdf_core.api.KPdfPageBitmap
+import com.mahmoud.kpdf_core.api.KPdfSearchState
 import com.mahmoud.kpdf_core.api.KPdfViewerConfig
 import com.mahmoud.kpdf_core.api.KPdfViewerState
 import kotlinx.coroutines.delay
@@ -190,6 +195,7 @@ internal actual fun KPlatformImageView(
     val bitmap = displayedPage.image.bitmap ?: return
     val activeScale = if (config.enableZoom) scale else 1f
     val activeOffset = if (config.enableZoom) offset else Offset.Zero
+    val searchState by state.searchState.collectAsState()
 
     Box(
         modifier = modifier
@@ -215,6 +221,12 @@ internal actual fun KPlatformImageView(
                 ),
             contentScale = ContentScale.Fit,
             filterQuality = FilterQuality.High,
+        )
+        SearchHighlightsOverlay(
+            page = displayedPage,
+            searchState = searchState,
+            activeScale = activeScale,
+            activeOffset = activeOffset,
         )
     }
 }
@@ -345,6 +357,7 @@ internal actual fun KVerticalPlatformImageView(
     val bitmap = displayedPage.image.bitmap ?: return
     val activeScale = if (config.enableZoom) scale else 1f
     val activeOffset = if (config.enableZoom) offset else Offset.Zero
+    val searchState by state.searchState.collectAsState()
 
     Box(
         modifier = modifier
@@ -370,6 +383,77 @@ internal actual fun KVerticalPlatformImageView(
             contentScale = ContentScale.Fit,
             filterQuality = FilterQuality.High,
         )
+        SearchHighlightsOverlay(
+            page = displayedPage,
+            searchState = searchState,
+            activeScale = activeScale,
+            activeOffset = activeOffset,
+        )
+    }
+}
+
+@Composable
+private fun SearchHighlightsOverlay(
+    page: KPdfPageBitmap,
+    searchState: KPdfSearchState,
+    activeScale: Float,
+    activeOffset: Offset,
+    modifier: Modifier = Modifier,
+) {
+    val success = searchState as? KPdfSearchState.Success ?: return
+    val pageResults = success.results.filter { it.pageIndex == page.pageIndex }
+    if (pageResults.isEmpty()) return
+
+    Canvas(
+        modifier = modifier
+            .fillMaxSize()
+            .graphicsLayer(
+                scaleX = activeScale,
+                scaleY = activeScale,
+                translationX = activeOffset.x,
+                translationY = activeOffset.y,
+            ),
+    ) {
+        if (size.width <= 0f || size.height <= 0f || page.width <= 0 || page.height <= 0) {
+            return@Canvas
+        }
+
+        val pageAspect = page.width.toFloat() / page.height.toFloat()
+        val canvasAspect = size.width / size.height
+        val fittedSize = if (pageAspect > canvasAspect) {
+            Size(
+                width = size.width,
+                height = size.width / pageAspect,
+            )
+        } else {
+            Size(
+                width = size.height * pageAspect,
+                height = size.height,
+            )
+        }
+        val fittedOrigin = Offset(
+            x = (size.width - fittedSize.width) / 2f,
+            y = (size.height - fittedSize.height) / 2f,
+        )
+
+        pageResults.forEach { result ->
+            val isActive = success.activeResult == result
+            result.bounds.forEach { rect ->
+                val left = fittedOrigin.x + rect.left * fittedSize.width
+                val top = fittedOrigin.y + rect.top * fittedSize.height
+                val right = fittedOrigin.x + rect.right * fittedSize.width
+                val bottom = fittedOrigin.y + rect.bottom * fittedSize.height
+                drawRoundRect(
+                    color = if (isActive) ActiveSearchHighlightColor else SearchHighlightColor,
+                    topLeft = Offset(left, top),
+                    size = Size(
+                        width = (right - left).coerceAtLeast(1f),
+                        height = (bottom - top).coerceAtLeast(1f),
+                    ),
+                    cornerRadius = CornerRadius(3f, 3f),
+                )
+            }
+        }
     }
 }
 
@@ -437,3 +521,5 @@ private const val RenderScaleStep = 0.5f
 private const val MaxRenderPixels: Long = 8_388_608L
 private const val SwipeDistanceThresholdPx = 72f
 private const val SwipeZoomTolerance = 0.01f
+private val SearchHighlightColor = Color(0x66FFD54F)
+private val ActiveSearchHighlightColor = Color(0x99FFB300)

@@ -22,6 +22,11 @@ interface KPdfDocumentRef {
         zoom: Float = 1f,
     ): Result<KPdfPageBitmap>
 
+    /**
+     * Searches the document for [query] and returns page-relative match bounds.
+     */
+    suspend fun searchText(query: String): Result<List<KPdfSearchResult>>
+
      fun close()
 
 

@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
      val loadState: StateFlow<KPdfLoadState>
      val currentPageIndex: StateFlow<Int>
      val currentZoom: StateFlow<Float>
+     val searchState: StateFlow<KPdfSearchState>
 
      val renderedPage: StateFlow<KPdfRenderedPageState>
      val openDocumentState: StateFlow<KPdfOpenDocumentState>
@@ -75,6 +76,26 @@ import kotlinx.coroutines.flow.StateFlow
      * Resets the current zoom back to the configured minimum.
      */
      fun resetZoom()
+
+    /**
+     * Searches the opened document and moves to the first match when available.
+     */
+     fun searchText(query: String)
+
+    /**
+     * Moves to the next search result, wrapping at the end.
+     */
+     fun nextSearchResult()
+
+    /**
+     * Moves to the previous search result, wrapping at the beginning.
+     */
+     fun previousSearchResult()
+
+    /**
+     * Clears the current search state and any visible search result selection.
+     */
+     fun clearSearch()
 
     /**
      * Closes the active document and releases resources owned by this state.

@@ -3,12 +3,16 @@ package com.mahmoud.kpdf_core.repository
 import android.graphics.Bitmap
 import android.graphics.Bitmap.createBitmap
 import android.graphics.Color
+import android.graphics.RectF
 import android.graphics.pdf.PdfRenderer
+import android.os.Build
 import android.os.ParcelFileDescriptor
 import com.mahmoud.kpdf_core.api.KPdfDocumentRef
 import com.mahmoud.kpdf_core.api.KPdfError
 import com.mahmoud.kpdf_core.api.KPdfException
 import com.mahmoud.kpdf_core.api.KPdfPageBitmap
+import com.mahmoud.kpdf_core.api.KPdfSearchRect
+import com.mahmoud.kpdf_core.api.KPdfSearchResult
 import com.mahmoud.kpdf_core.image.KPlatformImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
@@ -103,6 +107,52 @@ private class AndroidPdfDocumentRef(
         }
     }
 
+    override suspend fun searchText(query: String): Result<List<KPdfSearchResult>> = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            runCatching {
+                checkOpen()
+                val normalizedQuery = query.trim()
+                if (normalizedQuery.isEmpty()) return@runCatching emptyList()
+
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                    throw KPdfException(
+                        KPdfError.Unknown("PDF text search requires Android 15 or newer.")
+                    )
+                }
+
+                buildList {
+                    for (pageIndex in 0 until pageCount) {
+                        coroutineContext.ensureActive()
+
+                        renderer.openPage(pageIndex).use { page ->
+                            page.searchText(normalizedQuery).forEachIndexed { matchIndex, match ->
+                                add(
+                                    KPdfSearchResult(
+                                        pageIndex = pageIndex,
+                                        matchIndexOnPage = matchIndex,
+                                        textStartIndex = match.textStartIndex,
+                                        bounds = match.bounds.map { rect ->
+                                            rect.toSearchRect(
+                                                pageWidth = page.width,
+                                                pageHeight = page.height,
+                                            )
+                                        },
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }.recoverCatching {
+                throw when (it) {
+                    is KPdfException -> it
+                    is IOException -> KPdfException(KPdfError.CorruptedDocument, it)
+                    else -> KPdfException(KPdfError.Unknown(it.message ?: "Unable to search PDF text."), it)
+                }
+            }
+        }
+    }
+
     override fun close() {
         if (closed) return
         closed = true
@@ -115,6 +165,21 @@ private class AndroidPdfDocumentRef(
             throw KPdfException(KPdfError.Unknown("PDF document is already closed."))
         }
     }
+}
+
+private fun RectF.toSearchRect(
+    pageWidth: Int,
+    pageHeight: Int,
+): KPdfSearchRect {
+    val safeWidth = pageWidth.toFloat().coerceAtLeast(1f)
+    val safeHeight = pageHeight.toFloat().coerceAtLeast(1f)
+
+    return KPdfSearchRect(
+        left = (left / safeWidth).coerceIn(0f, 1f),
+        top = (top / safeHeight).coerceIn(0f, 1f),
+        right = (right / safeWidth).coerceIn(0f, 1f),
+        bottom = (bottom / safeHeight).coerceIn(0f, 1f),
+    )
 }
 
 private data class TargetSize(

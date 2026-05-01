@@ -127,6 +127,7 @@ val config = KPdfViewerConfig.builder()
 - `loadState`
 - `currentPageIndex`
 - `currentZoom`
+- `searchState`
 - `renderedPage`
 - `openDocumentState`
 - `saveState`
@@ -142,6 +143,10 @@ val config = KPdfViewerConfig.builder()
 - `zoomIn()`
 - `zoomOut()`
 - `resetZoom()`
+- `searchText(query)`
+- `nextSearchResult()`
+- `previousSearchResult()`
+- `clearSearch()`
 - `requestOpenFromDevice()`
 - `requestSave()`
 - `savePdf()`
@@ -181,6 +186,57 @@ Button(onClick = { viewerState.zoomIn() }) {
 Button(onClick = { viewerState.resetZoom() }) {
     Text("Reset Zoom")
 }
+```
+
+### Search Example
+
+Use `searchText(query)` to search the opened document. When matches are found, the viewer moves to the first match. Android 15+ and iOS also show highlighted match bounds on the rendered page.
+
+```kotlin
+val searchState by viewerState.searchState.collectAsState()
+
+Button(onClick = { viewerState.searchText("total") }) {
+    Text("Search")
+}
+
+Button(onClick = { viewerState.previousSearchResult() }) {
+    Text("Previous Match")
+}
+
+Button(onClick = { viewerState.nextSearchResult() }) {
+    Text("Next Match")
+}
+
+when (val state = searchState) {
+    KPdfSearchState.Idle -> Unit
+    is KPdfSearchState.Searching -> Text("Searching...")
+    is KPdfSearchState.Success -> Text("${state.results.size} matches")
+    is KPdfSearchState.Error -> Text(state.reason.message)
+}
+```
+
+The connected toolbar can trigger search and navigate matches too. Pass `searchQuery` for the default Search chip behavior, or override `onSearchClick` when your app opens a custom search field or dialog.
+
+```kotlin
+KPdfViewerToolbar(
+    state = viewerState,
+    isThumbnailStripVisible = thumbnailsVisible,
+    onThumbnailToggle = { thumbnailsVisible = it },
+)
+```
+
+For a controlled search field:
+
+```kotlin
+var query by remember { mutableStateOf("") }
+
+KPdfViewerToolbar(
+    state = viewerState,
+    isThumbnailStripVisible = thumbnailsVisible,
+    onThumbnailToggle = { thumbnailsVisible = it },
+    searchQuery = query,
+    onSearchQueryChange = { query = it },
+)
 ```
 
 ## 4. Render The Main Viewer
@@ -264,7 +320,7 @@ KPdfThumbnailStrip(
 
 ### Toolbar View
 
-`KPdfViewerToolbar` is a connected toolbar that can show page summary, zoom controls, save, share, and thumbnail toggle actions.
+`KPdfViewerToolbar` is a connected toolbar that can show page summary, search controls, zoom controls, save, share, and thumbnail toggle actions.
 
 ```kotlin
 var thumbnailsVisible by remember { mutableStateOf(true) }
@@ -302,6 +358,10 @@ KPdfViewerToolbar(
     config = KPdfViewerToolbarConfig.defaults().copy(
         visibility = KPdfViewerToolbarVisibility(
             showPageSummary = true,
+            showSearch = true,
+            showSearchSummary = true,
+            showSearchResultNavigation = true,
+            showClearSearch = true,
             showZoomOut = true,
             showZoomPercentage = true,
             showZoomIn = true,
@@ -310,6 +370,10 @@ KPdfViewerToolbar(
             showThumbnailToggle = true,
         ),
         strings = KPdfViewerToolbarStrings.defaults().copy(
+            searchText = "Find",
+            searchPlaceholderText = "Search document",
+            previousSearchResultText = "Previous",
+            nextSearchResultText = "Next",
             zoomOutText = "Smaller",
             zoomInText = "Bigger",
             saveText = "Export",
@@ -319,6 +383,7 @@ KPdfViewerToolbar(
             },
         ),
         icons = KPdfViewerToolbarIcons.defaults().copy(
+            searchIcon = { Text("F") },
             zoomOutIcon = { Text("--") },
             zoomInIcon = { Text("++") },
             saveIcon = { Text("SV") },
