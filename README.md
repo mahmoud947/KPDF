@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/kpdf-logo.png" alt="KPDF logo" width="640">
+</p>
+
 # KPDF
 
 KPDF is a Kotlin Multiplatform PDF library for Android and iOS with a Compose Multiplatform viewer layer.
@@ -9,7 +13,7 @@ KPDF is a Kotlin Multiplatform PDF library for Android and iOS with a Compose Mu
 
 ## Version
 
-Current version: `1.0.0`
+Current version: `1.1.0`
 
 
 ## Installation
@@ -17,8 +21,8 @@ Current version: `1.0.0`
 After publishing to Maven Central, add the library modules to your Gradle dependencies:
 
 ```kotlin
-implementation("io.github.mahmoud947:kpdf-core:1.0.0")
-implementation("io.github.mahmoud947:kpdf-compose:1.0.0")
+implementation("io.github.mahmoud947:kpdf-core:1.1.0")
+implementation("io.github.mahmoud947:kpdf-compose:1.1.0")
 ```
 
 Make sure the consumer project includes `mavenCentral()` in its repositories.

@@ -4,6 +4,8 @@ KPDF is a Kotlin Multiplatform PDF library for Android and iOS with a Compose Mu
 
 This document focuses on how to integrate and use the library in real applications.
 
+Current version: `1.1.0`
+
 ## Modules
 
 - `kpdf-core`
