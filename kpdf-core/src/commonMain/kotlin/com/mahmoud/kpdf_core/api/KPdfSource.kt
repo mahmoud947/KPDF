@@ -5,6 +5,7 @@ package com.mahmoud.kpdf_core.api
  * Copyright (c) 2026 KDF. All rights reserved.
  */
 
+
  sealed interface KPdfSource {
     /**
      * Remote PDF loaded through the SDK source pipeline.
