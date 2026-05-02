@@ -1,4 +1,5 @@
 package com.mahmoud.kpdf_compose
+import com.mahmoud.kpdf_core.api.KPdfSearchRect
 import kotlinx.cinterop.CValue
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -11,6 +12,7 @@ import platform.CoreGraphics.CGSizeMake
 import platform.Foundation.NSSelectorFromString
 import platform.UIKit.UIImage
 import platform.UIKit.UIImageView
+import platform.UIKit.UIColor
 import platform.UIKit.UIScrollView
 import platform.UIKit.UIScrollViewDelegateProtocol
 import platform.UIKit.UISwipeGestureRecognizer
@@ -40,6 +42,8 @@ class ZoomableImageContainer(
     var onSwipePrevious: (() -> Unit)? = null
 
     private var lastImage: UIImage? = null
+    private var searchHighlights: List<KPdfSearchHighlight> = emptyList()
+    private val highlightViews = mutableListOf<UIView>()
 
     private val imageView = UIImageView().apply {
         contentMode = UIViewContentModeScaleAspectFit
@@ -110,6 +114,7 @@ class ZoomableImageContainer(
             CGSizeMake(size.width, size.height)
         })
         centerImage()
+        layoutSearchHighlights()
     }
 
     fun setImage(image: UIImage?) {
@@ -118,7 +123,13 @@ class ZoomableImageContainer(
         imageView.image = image
         scrollView.setZoomScale(minZoom, animated = false)
         centerImage()
+        layoutSearchHighlights()
         onZoomChanged?.invoke(scrollView.zoomScale)
+    }
+
+    fun setSearchHighlights(highlights: List<KPdfSearchHighlight>) {
+        searchHighlights = highlights
+        layoutSearchHighlights()
     }
 
     fun setExternalZoom(scale: Double, animated: Boolean) {
@@ -206,6 +217,79 @@ class ZoomableImageContainer(
         }
     }
 
+    private fun layoutSearchHighlights() {
+        highlightViews.forEach { it.removeFromSuperview() }
+        highlightViews.clear()
+
+        val image = lastImage ?: return
+        if (searchHighlights.isEmpty()) return
+
+        val imageRect = fittedImageRect(image)
+        searchHighlights.forEach { highlight ->
+            val rect = highlight.rect
+            val view = UIView(
+                frame = CGRectMake(
+                    x = imageRect.x + rect.left * imageRect.width,
+                    y = imageRect.y + rect.top * imageRect.height,
+                    width = ((rect.right - rect.left) * imageRect.width).coerceAtLeast(1.0),
+                    height = ((rect.bottom - rect.top) * imageRect.height).coerceAtLeast(1.0),
+                )
+            ).apply {
+                backgroundColor = if (highlight.active) {
+                    UIColor.orangeColor.colorWithAlphaComponent(0.54)
+                } else {
+                    UIColor.yellowColor.colorWithAlphaComponent(0.45)
+                }
+                userInteractionEnabled = false
+                layer.cornerRadius = 3.0
+            }
+
+            imageView.addSubview(view)
+            highlightViews += view
+        }
+    }
+
+    private fun fittedImageRect(image: UIImage): ImageRect {
+        val viewSize = imageView.bounds.useContents { size.width to size.height }
+        val imageSize = image.size.useContents { width to height }
+        val viewWidth = viewSize.first.coerceAtLeast(1.0)
+        val viewHeight = viewSize.second.coerceAtLeast(1.0)
+        val imageWidth = imageSize.first.coerceAtLeast(1.0)
+        val imageHeight = imageSize.second.coerceAtLeast(1.0)
+        val imageAspect = imageWidth / imageHeight
+        val viewAspect = viewWidth / viewHeight
+
+        return if (imageAspect > viewAspect) {
+            val fittedHeight = viewWidth / imageAspect
+            ImageRect(
+                x = 0.0,
+                y = (viewHeight - fittedHeight) / 2.0,
+                width = viewWidth,
+                height = fittedHeight,
+            )
+        } else {
+            val fittedWidth = viewHeight * imageAspect
+            ImageRect(
+                x = (viewWidth - fittedWidth) / 2.0,
+                y = 0.0,
+                width = fittedWidth,
+                height = viewHeight,
+            )
+        }
+    }
+
     private fun canSwipe(): Boolean =
         swipeEnabled && abs(scrollView.zoomScale - minZoom) < 0.01
 }
+
+data class KPdfSearchHighlight(
+    val rect: KPdfSearchRect,
+    val active: Boolean,
+)
+
+private data class ImageRect(
+    val x: Double,
+    val y: Double,
+    val width: Double,
+    val height: Double,
+)

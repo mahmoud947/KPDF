@@ -15,6 +15,7 @@ import com.mahmoud.kpdf_core.api.KPdfRenderedPageState
 import com.mahmoud.kpdf_core.api.KPdfSaveRequest
 import com.mahmoud.kpdf_core.api.KPdfSaveResult
 import com.mahmoud.kpdf_core.api.KPdfSaveState
+import com.mahmoud.kpdf_core.api.KPdfSearchState
 import com.mahmoud.kpdf_core.api.KPdfSource
 import com.mahmoud.kpdf_core.api.KPdfViewerConfig
 import com.mahmoud.kpdf_core.api.KPdfViewerState
@@ -77,6 +78,7 @@ internal class DefaultKPdfViewerState(
     )
     private val _currentPage = MutableStateFlow(0)
     private val _currentZoom = MutableStateFlow(config.minZoom)
+    private val _searchState = MutableStateFlow<KPdfSearchState>(KPdfSearchState.Idle)
     private val inFlightRenderMutex = Mutex()
     private val inFlightRenders = mutableMapOf<KPdfPageCacheKey, Deferred<Result<KPdfPageBitmap>>>()
 
@@ -85,6 +87,7 @@ internal class DefaultKPdfViewerState(
     private var openJob: Job? = null
     private var renderJob: Job? = null
     private var preloadJob: Job? = null
+    private var searchJob: Job? = null
     private var saveJob: Job? = null
     private var externalOpenJob: Job? = null
     private var renderGeneration = 0
@@ -98,6 +101,7 @@ internal class DefaultKPdfViewerState(
     override val loadState: StateFlow<KPdfLoadState> = _loadState
     override val currentPageIndex: StateFlow<Int> = _currentPage
     override val currentZoom: StateFlow<Float> = _currentZoom
+    override val searchState: StateFlow<KPdfSearchState> = _searchState
     override val renderedPage: StateFlow<KPdfRenderedPageState> = _renderedPage
     override val openDocumentState: StateFlow<KPdfOpenDocumentState> = _openDocumentState
     override val openDocumentRequests: Flow<KPdfOpenDocumentRequest> = _openDocumentRequests.asSharedFlow()
@@ -111,9 +115,11 @@ internal class DefaultKPdfViewerState(
         openJob?.cancel()
         renderJob?.cancel()
         preloadJob?.cancel()
+        searchJob?.cancel()
         resetOpenDocumentFlow()
         resetSaveFlow()
         resetExternalOpenFlow()
+        _searchState.update { KPdfSearchState.Idle }
 
         openJob = scope.launch {
             closeCurrentDocument()
@@ -198,13 +204,75 @@ internal class DefaultKPdfViewerState(
         _currentZoom.update { config.minZoom }
     }
 
+    override fun searchText(query: String) {
+        val normalizedQuery = query.trim()
+        val currentDocument = document
+
+        searchJob?.cancel()
+        if (normalizedQuery.isEmpty()) {
+            _searchState.update { KPdfSearchState.Idle }
+            return
+        }
+
+        if (currentDocument == null) {
+            _searchState.update {
+                KPdfSearchState.Error(
+                    query = normalizedQuery,
+                    reason = KPdfError.Unknown("No PDF document is open."),
+                )
+            }
+            return
+        }
+
+        searchJob = scope.launch {
+            _searchState.update { KPdfSearchState.Searching(normalizedQuery) }
+
+            currentDocument.searchText(normalizedQuery).fold(
+                onSuccess = { results ->
+                    val success = KPdfSearchState.Success(
+                        query = normalizedQuery,
+                        results = results,
+                    )
+                    _searchState.update { success }
+                    success.activeResult?.let { result ->
+                        goToPage(result.pageIndex)
+                    }
+                },
+                onFailure = { throwable ->
+                    _searchState.update {
+                        KPdfSearchState.Error(
+                            query = normalizedQuery,
+                            reason = throwable.toKPdfError(),
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    override fun nextSearchResult() {
+        moveSearchResultBy(1)
+    }
+
+    override fun previousSearchResult() {
+        moveSearchResultBy(-1)
+    }
+
+    override fun clearSearch() {
+        searchJob?.cancel()
+        searchJob = null
+        _searchState.update { KPdfSearchState.Idle }
+    }
+
     override fun close() {
         openJob?.cancel()
         renderJob?.cancel()
         preloadJob?.cancel()
+        searchJob?.cancel()
         resetOpenDocumentFlow()
         resetSaveFlow()
         resetExternalOpenFlow()
+        _searchState.update { KPdfSearchState.Idle }
 
         scope.launch {
             closeCurrentDocument()
@@ -708,6 +776,18 @@ internal class DefaultKPdfViewerState(
         _externalOpenState.update { KPdfExternalOpenState.Idle }
     }
 
+    private fun moveSearchResultBy(delta: Int) {
+        val current = _searchState.value as? KPdfSearchState.Success ?: return
+        if (current.results.isEmpty()) return
+
+        val nextIndex = (current.activeResultIndex + delta).floorMod(current.results.size)
+        val nextState = current.copy(activeResultIndex = nextIndex)
+        _searchState.update { nextState }
+        nextState.activeResult?.let { result ->
+            goToPage(result.pageIndex)
+        }
+    }
+
     private fun resolveSuggestedFileName(
         suggestedFileName: String?,
         mimeType: String,
@@ -741,6 +821,9 @@ internal class DefaultKPdfViewerState(
         const val ZoomStep = 0.25f
     }
 }
+
+private fun Int.floorMod(other: Int): Int =
+    ((this % other) + other) % other
 
 internal fun buildPageLoadSequence(
     currentPageIndex: Int,

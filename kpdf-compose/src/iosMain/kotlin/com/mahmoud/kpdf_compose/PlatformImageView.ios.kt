@@ -5,16 +5,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
-import androidx.compose.ui.viewinterop.UIKitView
 import com.mahmoud.kpdf_core.api.KPdfPageBitmap
+import com.mahmoud.kpdf_core.api.KPdfSearchState
 import com.mahmoud.kpdf_core.api.KPdfViewerConfig
 import com.mahmoud.kpdf_core.api.KPdfViewerState
 import com.mahmoud.kpdf_core.image.KPlatformImage
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.readValue
 import platform.CoreGraphics.CGRectZero
-import platform.UIKit.UIImageView
-import platform.UIKit.UIViewContentMode.UIViewContentModeScaleAspectFit
+import androidx.compose.ui.viewinterop.UIKitView
 
 /*
  * Created by Mahmoud Kamal El-Din on 2026-04-23.
@@ -31,41 +30,24 @@ internal actual fun KPlatformImageView(
     modifier: Modifier
 ) {
     val sharedZoom by state.currentZoom.collectAsState()
+    val searchState by state.searchState.collectAsState()
     val uiImage = page.image.uiImage ?: return
-
-    if (!config.enableZoom) {
-        UIKitView(
-            factory = {
-                UIImageView().apply {
-                    contentMode = UIViewContentModeScaleAspectFit
-                    clipsToBounds = true
-                    userInteractionEnabled = false
-                }
-            },
-            modifier = modifier,
-            update = { imageView ->
-                imageView.image = uiImage
-            },
-            onRelease = {},
-            properties = UIKitInteropProperties(
-                isInteractive = false,
-                isNativeAccessibilityEnabled = true
-            )
-        )
-        return
-    }
+    val minZoom = config.minZoom.toDouble()
+    val maxZoom = if (config.enableZoom) config.maxZoom.toDouble() else minZoom
 
     UIKitView(
         factory = {
             ZoomableImageContainer(
                 frame = CGRectZero.readValue(),
-                minZoom = config.minZoom.toDouble(),
-                maxZoom = config.maxZoom.toDouble(),
-                doubleTapZoom = config.doubleTapZoom.toDouble(),
-                swipeEnabled = config.enableSwipe,
+                minZoom = minZoom,
+                maxZoom = maxZoom,
+                doubleTapZoom = if (config.enableZoom) config.doubleTapZoom.toDouble() else minZoom,
+                swipeEnabled = config.enableZoom && config.enableSwipe,
             ).apply {
                 onZoomChanged = { zoom ->
-                    state.setZoom(zoom.toFloat())
+                    if (config.enableZoom) {
+                        state.setZoom(zoom.toFloat())
+                    }
                 }
                 onSwipeNext = {
                     state.nextPage()
@@ -78,12 +60,32 @@ internal actual fun KPlatformImageView(
         modifier = modifier,
         update = { container ->
             container.setImage(uiImage)
-            container.setExternalZoom(sharedZoom.toDouble(), animated = false)
+            container.setSearchHighlights(page.searchHighlights(searchState))
+            container.setExternalZoom(
+                scale = if (config.enableZoom) sharedZoom.toDouble() else minZoom,
+                animated = false,
+            )
         },
         onRelease = {},
         properties = UIKitInteropProperties(
-            isInteractive = true,
+            isInteractive = config.enableZoom,
             isNativeAccessibilityEnabled = true
         )
     )
+}
+
+private fun KPdfPageBitmap.searchHighlights(
+    searchState: KPdfSearchState,
+): List<KPdfSearchHighlight> {
+    val success = searchState as? KPdfSearchState.Success ?: return emptyList()
+    return success.results
+        .filter { it.pageIndex == pageIndex }
+        .flatMap { result ->
+            result.bounds.map { rect ->
+                KPdfSearchHighlight(
+                    rect = rect,
+                    active = success.activeResult == result,
+                )
+            }
+        }
 }
