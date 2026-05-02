@@ -174,3 +174,5 @@ Type a query into the toolbar search field and tap Search. The toolbar then show
 ### DEMO
 
 https://github.com/user-attachments/assets/4d590fe5-e503-4954-bd96-0735c9d718c7
+
+
