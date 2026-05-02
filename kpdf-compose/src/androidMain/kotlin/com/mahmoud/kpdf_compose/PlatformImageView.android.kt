@@ -219,6 +219,160 @@ internal actual fun KPlatformImageView(
     }
 }
 
+
+/*
+ * Created by Mahmoud Kamal El-Din on 01/05/2026.
+ * Copyright (c) 2026 KDF. All rights reserved.
+ */
+@Composable
+internal actual fun KVerticalPlatformImageView(
+    page: KPdfPageBitmap,
+    state: KPdfViewerState,
+    contentDescription: String?,
+    config: KPdfViewerConfig,
+    modifier: Modifier
+) {
+    var offset by remember(page.pageIndex) { mutableStateOf(Offset.Zero) }
+    var viewportSize by remember(page.pageIndex) { mutableStateOf(IntSize.Zero) }
+    var displayedPage by remember(page.pageIndex) { mutableStateOf(page) }
+    val scale by state.currentZoom.collectAsState()
+
+    LaunchedEffect(page) {
+        displayedPage = page
+    }
+
+    fun clampOffset(value: Offset, targetScale: Float = scale): Offset {
+        val maxX = viewportSize.width * (targetScale - config.minZoom) / 2f
+        val maxY = viewportSize.height * (targetScale - config.minZoom) / 2f
+
+        return Offset(
+            x = value.x.coerceOffset(maxX),
+            y = value.y.coerceOffset(maxY),
+        )
+    }
+
+    fun updateScale(targetScale: Float) {
+        val boundedScale = targetScale.coerceIn(config.minZoom, config.maxZoom)
+        state.setZoom(boundedScale)
+        offset = clampOffset(offset, boundedScale)
+    }
+
+    fun resetZoom() {
+        state.resetZoom()
+        offset = Offset.Zero
+    }
+
+    val transformableState = rememberTransformableState { zoomChange, panChange, _ ->
+        val nextScale = (scale * zoomChange).coerceIn(config.minZoom, config.maxZoom)
+        state.setZoom(nextScale)
+        offset = if (nextScale > config.minZoom) {
+            clampOffset(offset + panChange, nextScale)
+        } else {
+            Offset.Zero
+        }
+    }
+
+    val gestureModifier = if (config.enableZoom) {
+        Modifier
+            .pointerInput(page.pageIndex, config.minZoom, config.doubleTapZoom) {
+                detectTapGestures(
+                    onDoubleTap = {
+                        if (scale > config.minZoom) {
+                            resetZoom()
+                        } else {
+                            updateScale(config.doubleTapZoom)
+                        }
+                    },
+                )
+            }
+            .transformable(
+                state = transformableState,
+                canPan = { scale > config.minZoom + SwipeZoomTolerance },
+            )
+    } else {
+        Modifier
+    }
+
+    val requestedRenderScale = quantizeRenderScale(
+        scale = if (config.enableZoom) scale else 1f,
+    )
+    val requestedRenderSize = remember(
+        page.width,
+        page.height,
+        viewportSize,
+        requestedRenderScale,
+    ) {
+        calculateRenderTargetSize(
+            contentWidth = page.width,
+            contentHeight = page.height,
+            viewportSize = viewportSize,
+            zoom = requestedRenderScale,
+        )
+    }
+
+    LaunchedEffect(page.pageIndex, requestedRenderSize) {
+        if (!requestedRenderSize.isValid()) return@LaunchedEffect
+        if (displayedPage.pageIndex == page.pageIndex &&
+            displayedPage.width >= requestedRenderSize.width &&
+            displayedPage.height >= requestedRenderSize.height
+        ) {
+            return@LaunchedEffect
+        }
+
+        if (requestedRenderScale > 1f) {
+            delay(RenderUpgradeDelayMillis)
+        }
+
+        if (displayedPage.pageIndex == page.pageIndex &&
+            displayedPage.width >= requestedRenderSize.width &&
+            displayedPage.height >= requestedRenderSize.height
+        ) {
+            return@LaunchedEffect
+        }
+
+        state.renderPage(
+            pageIndex = page.pageIndex,
+            targetWidth = viewportSize.width.coerceAtLeast(1),
+            targetHeight = viewportSize.height.coerceAtLeast(1),
+            zoom = requestedRenderScale,
+        ).onSuccess { rerenderedPage ->
+            if (rerenderedPage.pageIndex == page.pageIndex) {
+                displayedPage = rerenderedPage
+            }
+        }
+    }
+
+    val bitmap = displayedPage.image.bitmap ?: return
+    val activeScale = if (config.enableZoom) scale else 1f
+    val activeOffset = if (config.enableZoom) offset else Offset.Zero
+
+    Box(
+        modifier = modifier
+            .clipToBounds()
+            .onSizeChanged { size ->
+                viewportSize = size
+                offset = clampOffset(offset)
+            }
+            .then(gestureModifier),
+        contentAlignment = Alignment.Center,
+    ) {
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = contentDescription,
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer(
+                    scaleX = activeScale,
+                    scaleY = activeScale,
+                    translationX = activeOffset.x,
+                    translationY = activeOffset.y,
+                ),
+            contentScale = ContentScale.Fit,
+            filterQuality = FilterQuality.High,
+        )
+    }
+}
+
 private fun Float.coerceOffset(maxOffset: Float): Float =
     if (maxOffset > 0f) coerceIn(-maxOffset, maxOffset) else 0f
 

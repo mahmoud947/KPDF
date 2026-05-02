@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
  *
  * The state exposes unidirectional observable values through [StateFlow] and
  * keeps document loading, rendering, and source details behind the SDK boundary.
+ * Created by Mahmoud kamal El-Din on 04/23/2026
  */
  interface KPdfViewerState {
      val source: KPdfSource

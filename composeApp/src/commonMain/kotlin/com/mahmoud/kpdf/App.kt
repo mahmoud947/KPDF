@@ -23,7 +23,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mahmoud.kpdf.common.ScreenTabs
-import com.mahmoud.kpdf.composeapp.generated.resources.Res
 import com.mahmoud.kpdf.screens.Base64Screen
 import com.mahmoud.kpdf.screens.ControlsScreen
 import com.mahmoud.kpdf.screens.LocalScreen
@@ -34,6 +33,7 @@ import com.mahmoud.kpdf_core.api.KPdfOpenDocumentState
 import com.mahmoud.kpdf_core.api.KPdfSource
 import com.mahmoud.kpdf_core.api.KPdfSource.Base64
 import com.mahmoud.kpdf_core.api.KPdfSource.Bytes
+import io.github.mahmoud947.composeapp.generated.resources.Res
 import kotlinx.coroutines.launch
 
 /**
@@ -77,6 +77,7 @@ fun App() {
         var contentScreen by remember { mutableStateOf(ShowcaseScreen.Remote) }
         var importedSource by remember { mutableStateOf<KPdfSource?>(null) }
         var thumbnailsVisible by remember { mutableStateOf(true) }
+        var verticalView by remember { mutableStateOf(false) }
         var status by remember { mutableStateOf<String?>(null) }
         val scope = rememberCoroutineScope()
         val config = remember { viewerConfig() }
@@ -188,7 +189,9 @@ fun App() {
                         ShowcaseScreen.Controls -> ControlsScreen(
                             state = activeViewerState,
                             thumbnailsVisible = thumbnailsVisible,
+                            verticalView = verticalView,
                             onToggleThumbnails = { thumbnailsVisible = !thumbnailsVisible },
+                            onToggleVerticalView = { verticalView = !verticalView },
                             onShare = {
                                 scope.launch {
                                     status = activeViewerState.exportPdf().fold(

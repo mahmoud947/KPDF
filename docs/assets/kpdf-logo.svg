@@ -1,0 +1,15 @@
+<svg width="960" height="320" viewBox="0 0 960 320" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">KPDF logo</title>
+  <desc id="desc">KPDF wordmark with a folded PDF page and Kotlin-inspired color planes.</desc>
+  <rect width="960" height="320" rx="48" fill="#101820"/>
+  <path d="M157 48H287L365 126V272H157V48Z" fill="#F8FAFC"/>
+  <path d="M287 48V126H365L287 48Z" fill="#CBD5E1"/>
+  <path d="M187 184H335V232H187V184Z" fill="#EF4444"/>
+  <path d="M187 184L243 128H335L279 184H187Z" fill="#7C3AED"/>
+  <path d="M187 232L243 176H335L279 232H187Z" fill="#06B6D4"/>
+  <path d="M191 76H253V92H191V76Z" fill="#334155"/>
+  <path d="M191 108H269V124H191V108Z" fill="#334155"/>
+  <path d="M191 140H235V156H191V140Z" fill="#334155"/>
+  <text x="420" y="154" fill="#F8FAFC" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="92" font-weight="800" letter-spacing="0">KPDF</text>
+  <text x="426" y="210" fill="#94A3B8" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="30" font-weight="600" letter-spacing="0">Kotlin Multiplatform PDF toolkit</text>
+</svg>

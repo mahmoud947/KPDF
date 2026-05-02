@@ -2,14 +2,15 @@
 
 This guide shows the recommended integration path for KPDF in a Compose Multiplatform application.
 
+Current version: `1.1.0`
 
 ## 1. Add The Library Modules
 
 Add:
 
 ```kotlin
-implementation("io.github.mahmoud947:kpdf-core:$version")
-implementation("io.github.mahmoud947:kpdf-compose:$version")
+implementation("io.github.mahmoud947:kpdf-core:1.1.0")
+implementation("io.github.mahmoud947:kpdf-compose:1.1.0")
 ```
 
 Use:

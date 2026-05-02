@@ -4,6 +4,8 @@ KPDF is a Kotlin Multiplatform PDF library for Android and iOS with a Compose Mu
 
 This document focuses on how to integrate and use the library in real applications.
 
+Current version: `1.1.0`
+
 ## Modules
 
 - `kpdf-core`
@@ -195,6 +197,31 @@ KPdfViewer(
 ```
 
 `KPdfViewer` reads the active page and zoom state from `KPdfViewerState`.
+
+For a continuous vertical scroll layout, use `KPdfVerticalViewer` with the same state.
+
+```kotlin
+KPdfVerticalViewer(
+    state = viewerState,
+    modifier = Modifier.fillMaxSize(),
+)
+```
+
+Both viewer layouts expose slots for loading and error states:
+
+```kotlin
+KPdfViewer(
+    state = viewerState,
+    loadingContent = { CircularProgressIndicator() },
+    errorContent = { message -> Text(message) },
+)
+
+KPdfVerticalViewer(
+    state = viewerState,
+    loadingContent = { CircularProgressIndicator() },
+    errorContent = { message -> Text(message) },
+)
+```
 
 ## 5. Add Connected Views
 
